@@ -1,6 +1,7 @@
 import { CommandInteraction, MessageEmbed } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
 import { Client as AwClient } from "aviationweather";
+import { numSpoke } from "../utils/num2word";
 import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
@@ -52,15 +53,51 @@ export class buttonExample {
 
       // raw text
       embed.addField("Raw Text", metarData.raw_text);
+      const spoken: string[] = [];
+      if (metarData.wind_dir_degrees) {
+        spoken.push(
+          `Winds ${numSpoke(metarData.wind_dir_degrees)} at ${
+            metarData.wind_speed_kt
+          }kt.`
+        );
+      }
+      if (metarData.visibility_statute_mi) {
+        spoken.push(
+          `Visibility ${numSpoke(
+            Number((metarData.visibility_statute_mi * 1.609344).toFixed(2))
+          )} kilometers.`
+        );
+      }
+
+      if (metarData.altim_in_hg) {
+        spoken.push(
+          `Altimeter ${numSpoke(
+            Number((metarData.altim_in_hg * 33.863886666667).toFixed(2))
+          )} hPa.`
+        );
+      }
+
+      if (metarData.temp_c) {
+        spoken.push(
+          `Temperature ${numSpoke(metarData.temp_c)} degree celsius.`
+        );
+      }
+
+      if (metarData.dewpoint_c) {
+        spoken.push(`Dewpoint ${numSpoke(metarData.temp_c)} degree celsius.`);
+      }
+      embed.addField("Spoken", spoken.join(" "));
 
       // Cloud
       const cloudInfo = metarData.sky_condition.length
         ? metarData.sky_condition
             .map((info) => {
               return (
-                `${info.sky_cover ?? "NaN"}` +
+                `${aw.getSkyCondition(info.sky_cover).description} (${
+                  info.sky_cover
+                })` +
                 (info.cloud_base_ft_agl
-                  ? ` (${info?.cloud_base_ft_agl} ft)`
+                  ? ` at ${info?.cloud_base_ft_agl} ft`
                   : "")
               );
             })
@@ -112,11 +149,21 @@ export class buttonExample {
           )})`
       );
 
+      // Source
+      embed.addField(
+        "Source",
+        `[Aviation Weather](${aw.URI.AW({
+          datasource: "METARS",
+          stationString: station.station_id,
+          hoursBeforeNow: hourBefore,
+        })})`
+      );
+
       // Timestamp
       embed.setTimestamp(new Date(metarData.observation_time));
 
       // Footer advise
-      embed.setFooter("This data should only be used for planning purposes");
+      embed.setFooter("This data should only be used for planning purposes ");
 
       return embed;
     });
