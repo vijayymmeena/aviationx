@@ -7,8 +7,10 @@ import { sendPaginatedEmbeds } from "@discordx/utilities";
 export class buttonExample {
   @Slash("metar")
   async hello(
-    @SlashOption("station", { required: true }) icao: string,
-    @SlashOption("hourbefore") hourBefore: number,
+    @SlashOption("station", { description: "Enter ICAO code", required: true })
+    icao: string,
+    @SlashOption("hourbefore", { description: "Hours between 1 to 48" })
+    hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
     // fix hour
@@ -42,7 +44,7 @@ export class buttonExample {
       );
     }
 
-    response.forEach(console.log);
+    // response.forEach(console.log);
     const allPages = response.map((metarData) => {
       // prepare embed
       const embed = new MessageEmbed();
