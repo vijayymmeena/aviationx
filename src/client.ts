@@ -26,6 +26,9 @@ client.on("ready", () => {
 });
 
 client.on("interactionCreate", (interaction: Interaction) => {
+  if (interaction.isButton() || interaction.isSelectMenu()) {
+    if (interaction.customId.startsWith("discordx@pagination@")) return;
+  }
   client.executeInteraction(interaction);
 });
 

@@ -8,8 +8,12 @@ export class buttonExample {
   @Slash("metar")
   async hello(
     @SlashOption("station", { required: true }) icao: string,
+    @SlashOption("hourbefore") hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
+    // fix hour
+    if (!hourBefore || hourBefore < 1 || hourBefore > 48) hourBefore = 1;
+
     const aw = new AwClient();
     const searchStation = await aw.AW({
       datasource: "STATIONS",
@@ -28,7 +32,7 @@ export class buttonExample {
     const response = await aw.AW({
       datasource: "METARS",
       stationString: station.station_id,
-      hoursBeforeNow: 1,
+      hoursBeforeNow: hourBefore,
     });
 
     // if no info found
@@ -38,6 +42,7 @@ export class buttonExample {
       );
     }
 
+    response.forEach(console.log);
     const allPages = response.map((metarData) => {
       // prepare embed
       const embed = new MessageEmbed();
@@ -62,7 +67,10 @@ export class buttonExample {
       embed.addField("Cloud", cloudInfo);
 
       // Wind
-      // embed.addField("Wind", ``);
+      embed.addField(
+        "Wind",
+        `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt`
+      );
 
       // Altimeter
       embed.addField(
@@ -78,14 +86,19 @@ export class buttonExample {
       );
 
       // Flight Rule
-      embed.addField("Flight Rule", metarData.flight_category.toString());
+      embed.addField(
+        "Flight Rule",
+        metarData.flight_category ?? "Data not available"
+      );
 
       // Visibility
       embed.addField(
         "Visibility",
-        `${metarData.visibility_statute_mi.toFixed(2)} sm (${(
-          metarData.visibility_statute_mi * 1.609344
-        ).toFixed(2)} km)`
+        metarData.visibility_statute_mi
+          ? `${metarData.visibility_statute_mi.toFixed(2)} sm (${(
+              metarData.visibility_statute_mi * 1.609344
+            ).toFixed(2)} km)`
+          : "Data not available"
       );
 
       // Location
