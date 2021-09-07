@@ -7,7 +7,7 @@ import { sendPaginatedEmbeds } from "@discordx/utilities";
 @Discord()
 export class buttonExample {
   @Slash("metar", {
-    description: " Obtain metar information for a given CIAO id",
+    description: "Obtain metar information for a given CIAO id",
   })
   async hello(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
@@ -123,7 +123,11 @@ export class buttonExample {
       // Temperature
       embed.addField(
         "Temperature",
-        `${metarData.temp_c}°C (Dewpoint: ${metarData.dewpoint_c}°C)`
+        `${metarData.temp_c}°C (${
+          (metarData.temp_c * 9) / 5 + 32
+        }°F) - Dewpoint: ${metarData.dewpoint_c}°C (${
+          (metarData.dewpoint_c * 9) / 5 + 32
+        }°F)`
       );
 
       // Flight Rule
