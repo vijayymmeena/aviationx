@@ -6,7 +6,9 @@ import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
 export class buttonExample {
-  @Slash("metar")
+  @Slash("metar", {
+    description: " Obtain metar information for a given CIAO id",
+  })
   async hello(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
@@ -89,21 +91,21 @@ export class buttonExample {
       embed.addField("Spoken", spoken.join(" "));
 
       // Cloud
-      const cloudInfo = metarData.sky_condition.length
-        ? metarData.sky_condition
-            .map((info) => {
-              return (
-                `${aw.getSkyCondition(info.sky_cover).description} (${
-                  info.sky_cover
-                })` +
-                (info.cloud_base_ft_agl
-                  ? ` at ${info?.cloud_base_ft_agl} ft`
-                  : "")
-              );
-            })
-            .join("\n")
-        : "Data not available";
-      embed.addField("Cloud", cloudInfo);
+      if (metarData.sky_condition.length) {
+        const cloudInfo = metarData.sky_condition
+          .map((info) => {
+            return (
+              `${aw.getSkyCondition(info.sky_cover).description} (${
+                info.sky_cover
+              })` +
+              (info.cloud_base_ft_agl
+                ? ` at ${info?.cloud_base_ft_agl} ft`
+                : "")
+            );
+          })
+          .join("\n");
+        embed.addField("Cloud", cloudInfo);
+      }
 
       // Wind
       embed.addField(
@@ -125,20 +127,19 @@ export class buttonExample {
       );
 
       // Flight Rule
-      embed.addField(
-        "Flight Rule",
-        metarData.flight_category ?? "Data not available"
-      );
+      if (metarData.flight_category) {
+        embed.addField("Flight Rule", metarData.flight_category);
+      }
 
       // Visibility
-      embed.addField(
-        "Visibility",
-        metarData.visibility_statute_mi
-          ? `${metarData.visibility_statute_mi.toFixed(2)} sm (${(
-              metarData.visibility_statute_mi * 1.609344
-            ).toFixed(2)} km)`
-          : "Data not available"
-      );
+      if (metarData.visibility_statute_mi) {
+        embed.addField(
+          "Visibility",
+          `${metarData.visibility_statute_mi.toFixed(2)} sm (${(
+            metarData.visibility_statute_mi * 1.609344
+          ).toFixed(2)} km)`
+        );
+      }
 
       // Location
       embed.addField(
@@ -155,7 +156,8 @@ export class buttonExample {
         `[Aviation Weather](${aw.URI.AW({
           datasource: "METARS",
           stationString: station.station_id,
-          hoursBeforeNow: hourBefore,
+          startTime: metarData.observation_time,
+          endTime: metarData.observation_time,
         })})`
       );
 
@@ -163,14 +165,27 @@ export class buttonExample {
       embed.setTimestamp(new Date(metarData.observation_time));
 
       // Footer advise
-      embed.setFooter("This data should only be used for planning purposes ");
+      embed.setFooter(
+        "This data should only be used for planning purposes | Observation Time"
+      );
 
       return embed;
     });
 
     if (allPages.length === 1) return interaction.reply({ embeds: allPages });
     else {
-      sendPaginatedEmbeds(interaction, allPages);
+      if (allPages.length < 6) {
+        sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });
+      } else {
+        // all pages text with observation time
+        const menuoptions = response.map(
+          (metarData) => `Page {page} - ${metarData.observation_time}`
+        );
+        sendPaginatedEmbeds(interaction, allPages, {
+          type: "SELECT_MENU",
+          pageText: menuoptions,
+        });
+      }
     }
   }
 }
