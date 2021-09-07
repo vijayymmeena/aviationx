@@ -7,7 +7,7 @@ export class buttonExample {
   @Slash("station", {
     description: "Obtain station information for a given CIAO id",
   })
-  async hello(
+  async station(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
     interaction: CommandInteraction

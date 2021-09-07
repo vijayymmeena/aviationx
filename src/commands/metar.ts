@@ -9,7 +9,7 @@ export class buttonExample {
   @Slash("metar", {
     description: "Obtain metar information for a given CIAO id",
   })
-  async hello(
+  async metar(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
     @SlashOption("hourbefore", { description: "Hours between 1 to 48" })
@@ -110,7 +110,8 @@ export class buttonExample {
       // Wind
       embed.addField(
         "Wind",
-        `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt`
+        `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt` +
+          (metarData.wind_gust_kt ? ` (gust ${metarData.wind_gust_kt}kt)` : "")
       );
 
       // Altimeter
@@ -153,6 +154,9 @@ export class buttonExample {
             2
           )})`
       );
+
+      // Type
+      embed.addField("Elevation", `${metarData.elevation_m} meters MSL`);
 
       // Source
       embed.addField(

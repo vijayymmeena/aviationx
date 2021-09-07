@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@discordx/utilities": "^1.1.7",
-    "aviationweather": "^1.2.0",
+    "aviationweather": "^1.2.2",
     "discord.js": "^13.1.0",
     "discordx": "^5.8.2",
     "dotenv": "^10.0.0",
