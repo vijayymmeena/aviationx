@@ -13,6 +13,8 @@ export class buttonExample {
     hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
+    await interaction.deferReply();
+
     // fix hour
     if (!hourBefore || hourBefore < 1 || hourBefore > 48) hourBefore = 1;
 
@@ -60,7 +62,7 @@ export class buttonExample {
       if (report.temp_c) {
         embed.addField(
           "Temperature",
-          `${report.temp_c}°C (${(report.temp_c * 9) / 5 + 32}°F)`
+          `${report.temp_c}°C (${((report.temp_c * 9) / 5 + 32).toFixed(2)}°F)`
         );
       }
 
@@ -102,8 +104,10 @@ export class buttonExample {
       return embed;
     });
 
-    if (allPages.length === 1) return interaction.reply({ embeds: allPages });
-    else {
+    if (allPages.length === 1) {
+      interaction.editReply({ embeds: allPages });
+      return;
+    } else {
       if (allPages.length < 6) {
         sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });
       } else {

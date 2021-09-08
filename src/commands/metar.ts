@@ -124,11 +124,12 @@ export class buttonExample {
       // Temperature
       embed.addField(
         "Temperature",
-        `${metarData.temp_c}°C (${
-          (metarData.temp_c * 9) / 5 + 32
-        }°F) - Dewpoint: ${metarData.dewpoint_c}°C (${
-          (metarData.dewpoint_c * 9) / 5 + 32
-        }°F)`
+        `${metarData.temp_c}°C (${((metarData.temp_c * 9) / 5 + 32).toFixed(
+          2
+        )}°F) - Dewpoint: ${metarData.dewpoint_c}°C (${(
+          (metarData.dewpoint_c * 9) / 5 +
+          32
+        ).toFixed(2)}°F)`
       );
 
       // Flight Rule
