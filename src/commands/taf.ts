@@ -27,9 +27,10 @@ export class buttonExample {
     // fetch station info
     const station = searchStation[0];
     if (!station) {
-      return interaction.reply(
+      interaction.followUp(
         "Looks like invalid ICAO code, Please raise an issue on github if the bot does not display information for valid ICAO codes\n\nhttps://github.com/oceanroleplay/aviationx"
       );
+      return;
     }
 
     // fetch metar info
@@ -41,9 +42,10 @@ export class buttonExample {
 
     // if no info found
     if (!response.length) {
-      return interaction.reply(
+      interaction.followUp(
         `Data not available for ${station.site} (${station.station_id})`
       );
+      return;
     }
 
     // response.forEach(console.log);
@@ -162,7 +164,8 @@ export class buttonExample {
     });
 
     if (allPages.length === 1 && allPages[0]) {
-      return interaction.reply(allPages[0]);
+      interaction.followUp(allPages[0]);
+      return;
     } else {
       if (allPages.length < 6) {
         sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });

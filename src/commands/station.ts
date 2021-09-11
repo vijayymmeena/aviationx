@@ -12,6 +12,8 @@ export class buttonExample {
     icao: string,
     interaction: CommandInteraction
   ): Promise<void> {
+    await interaction.deferReply();
+
     const aw = new AwClient();
     const stations = await aw.AW({
       datasource: "STATIONS",
@@ -19,7 +21,7 @@ export class buttonExample {
     });
     const station = stations[0];
     if (!station) {
-      interaction.reply(
+      interaction.followUp(
         "Looks like invalid ICAO code, Please raise an issue on github if the bot does not display information for valid ICAO codes\n\nhttps://github.com/oceanroleplay/aviationx"
       );
       return;
@@ -64,6 +66,6 @@ export class buttonExample {
     );
 
     // send
-    interaction.reply({ embeds: [embed] });
+    interaction.followUp({ embeds: [embed] });
   }
 }

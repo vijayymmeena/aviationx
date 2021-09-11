@@ -28,7 +28,8 @@ export class buttonExample {
 
     // if no info found
     if (!response.length) {
-      return interaction.reply("Data not available for search query");
+      interaction.followUp("Data not available for search query");
+      return;
     }
 
     // response.forEach(console.log);
@@ -105,7 +106,7 @@ export class buttonExample {
     });
 
     if (allPages.length === 1) {
-      interaction.editReply({ embeds: allPages });
+      interaction.followUp({ embeds: allPages });
       return;
     } else {
       if (allPages.length < 6) {
