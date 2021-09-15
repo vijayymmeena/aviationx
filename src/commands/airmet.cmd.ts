@@ -5,24 +5,26 @@ import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
 export class buttonExample {
-  @Slash("gairmet", {
-    description: "Obtain g-airsigmets weather reports",
+  @Slash("airmet", {
+    description: "Obtain airsigmets weather reports",
   })
-  async gairmet(
-    @SlashOption("hourbefore", { description: "Hours between 1 to 48" })
+  async airmet(
+    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
     await interaction.deferReply();
 
     // fix hour
-    if (!hourBefore || hourBefore < 1 || hourBefore > 48) hourBefore = 1;
+    if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
+      hourBefore = 1;
+    }
 
     const aw = new AwClient();
 
     // fetch metar info
     const response = await aw.AW({
-      datasource: "GAIRMETS",
+      datasource: "AIRSIGMETS",
       hoursBeforeNow: hourBefore,
     });
 
@@ -36,8 +38,9 @@ export class buttonExample {
     const allPages = response.map((report) => {
       // prepare embed
       const embed = new MessageEmbed();
-      embed.addField("Issue At", report.issue_time);
-      embed.addField("Valid Till", report.valid_time);
+      embed.addField("Raw text", report.raw_text);
+      embed.addField("From", new Date(report.valid_time_from).toUTCString());
+      embed.addField("To", new Date(report.valid_time_to).toUTCString());
 
       if (report.altitude?.min_ft_msl) {
         embed.addField(
@@ -57,7 +60,9 @@ export class buttonExample {
       embed.addField(
         "Source",
         `[Aviation Weather](${aw.URI.AW({
-          datasource: "GAIRMETS",
+          datasource: "AIRSIGMETS",
+          startTime: report.valid_time_from,
+          endTime: report.valid_time_to,
         })})`
       );
 
@@ -70,7 +75,7 @@ export class buttonExample {
       );
 
       // Timestamp
-      embed.setTimestamp(new Date(report.valid_time));
+      embed.setTimestamp(new Date(report.valid_time_from));
 
       // Footer advise
       embed.setFooter(

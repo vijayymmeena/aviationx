@@ -1,7 +1,7 @@
 import { CommandInteraction, MessageEmbed } from "discord.js";
 import { Discord, Slash, SlashOption } from "discordx";
 import { Client as AwClient } from "aviationweather";
-import { numSpoke } from "../utils/num2word";
+import { numSpoke } from "./utils/num2word";
 import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
@@ -12,12 +12,16 @@ export class buttonExample {
   async metar(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
-    @SlashOption("hourbefore", { description: "Hours between 1 to 48" })
+    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
+    await interaction.deferReply();
+
     // fix hour
-    if (!hourBefore || hourBefore < 1 || hourBefore > 48) hourBefore = 1;
+    if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
+      hourBefore = 1;
+    }
 
     const aw = new AwClient();
     const searchStation = await aw.AW({

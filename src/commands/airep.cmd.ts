@@ -9,14 +9,16 @@ export class buttonExample {
     description: "Obtain recent aircraft weather reports",
   })
   async airep(
-    @SlashOption("hourbefore", { description: "Hours between 1 to 48" })
+    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
     await interaction.deferReply();
 
     // fix hour
-    if (!hourBefore || hourBefore < 1 || hourBefore > 48) hourBefore = 1;
+    if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
+      hourBefore = 1;
+    }
 
     const aw = new AwClient();
 
@@ -42,10 +44,16 @@ export class buttonExample {
       embed.addField("Raw Text", report.raw_text ?? "Unavailable");
 
       // Observation Time
-      embed.addField("Observation Time", report.observation_time);
+      embed.addField(
+        "Observation Time",
+        `${new Date(report.observation_time).toUTCString()}`
+      );
 
       // Receipt Time
-      embed.addField("Receipt Time", report.receipt_time);
+      embed.addField(
+        "Receipt Time",
+        `${new Date(report.receipt_time).toUTCString()}`
+      );
 
       // Wind
       embed.addField(
@@ -115,7 +123,9 @@ export class buttonExample {
         // all pages text with observation time
         const menuoptions = response.map(
           (report) =>
-            `Page {page} - ${report.aircraft_ref} - ${report.observation_time}`
+            `Page {page} - ${report.aircraft_ref} - ${new Date(
+              report.observation_time
+            ).toUTCString()}`
         );
         sendPaginatedEmbeds(interaction, allPages, {
           type: "SELECT_MENU",

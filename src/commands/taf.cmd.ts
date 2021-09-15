@@ -11,12 +11,16 @@ export class buttonExample {
   async taf(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
-    @SlashOption("hourbefore", { description: "Hours between 1 to 48" })
+    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
+    await interaction.deferReply();
+
     // fix hour
-    if (!hourBefore || hourBefore < 1 || hourBefore > 48) hourBefore = 1;
+    if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
+      hourBefore = 1;
+    }
 
     const aw = new AwClient();
     const searchStation = await aw.AW({
@@ -58,19 +62,33 @@ export class buttonExample {
       embed.addField("Raw Text", tafData.raw_text);
 
       // Issue Time
-      embed.addField("Issue Time", `${tafData.issue_time}`);
+      embed.addField(
+        "Issue Time",
+        `${new Date(tafData.issue_time).toUTCString()}`
+      );
 
       // Bulletin Time
-      embed.addField("Bulletin Time", `${tafData.bulletin_time}`);
+      embed.addField(
+        "Bulletin Time",
+        `${new Date(tafData.bulletin_time).toUTCString()}`
+      );
 
       // Valid From Time
-      embed.addField("Valid From", `${tafData.valid_time_from}`);
+      embed.addField(
+        "Valid From",
+        `${new Date(tafData.valid_time_from).toUTCString()}`
+      );
 
       // Valid To Time
-      embed.addField("Valid To", `${tafData.valid_time_to}`);
+      embed.addField(
+        "Valid To",
+        `${new Date(tafData.valid_time_to).toUTCString()}`
+      );
 
       // Remark
-      if (tafData.remarks) embed.addField("Remark", tafData.remarks);
+      if (tafData.remarks) {
+        embed.addField("Remark", tafData.remarks);
+      }
 
       // Location
       embed.addField(
@@ -108,15 +126,17 @@ export class buttonExample {
           `Forecast ${i + 1} - ${station.site} (${station.station_id})`
         );
 
-        fembed.addField("From", `${fr.fcst_time_from}`);
-        fembed.addField("To", `${fr.fcst_time_to}`);
+        fembed.addField("From", `${new Date(fr.fcst_time_from).toUTCString()}`);
+        fembed.addField("To", `${new Date(fr.fcst_time_to).toUTCString()}`);
 
         // Wind
-        fembed.addField(
-          "Wind",
-          `${fr.wind_dir_degrees}° ${fr.wind_speed_kt}kt` +
-            (fr.wind_gust_kt ? ` (gust ${fr.wind_gust_kt}kt)` : "")
-        );
+        if (fr.wind_dir_degrees) {
+          fembed.addField(
+            "Wind",
+            `${fr.wind_dir_degrees}° ${fr.wind_speed_kt}kt` +
+              (fr.wind_gust_kt ? ` (gust ${fr.wind_gust_kt}kt)` : "")
+          );
+        }
 
         // Visibility
         if (fr.visibility_statute_mi) {
@@ -129,7 +149,7 @@ export class buttonExample {
         }
 
         // Cloud`
-        if (fr.sky_condition.length) {
+        if (fr.sky_condition?.length) {
           const cloudInfo = fr.sky_condition
             .map((info) => {
               return (
@@ -172,7 +192,8 @@ export class buttonExample {
       } else {
         // all pages text with observation time
         const menuoptions = response.map(
-          (metarData) => `Page {page} - ${metarData.issue_time}`
+          (metarData) =>
+            `Page {page} - ${new Date(metarData.issue_time).toUTCString()}`
         );
         sendPaginatedEmbeds(interaction, allPages, {
           type: "SELECT_MENU",

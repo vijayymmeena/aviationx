@@ -14,14 +14,15 @@ const client = new Client({
     Intents.FLAGS.GUILD_VOICE_STATES,
   ],
   classes: [
-    path.join(__dirname, "commands", "**/*.{ts,js}"),
-    path.join(__dirname, "events", "**/*.{ts,js}"),
+    path.join(__dirname, "commands", "**/*.cmd.{ts,js}"),
+    path.join(__dirname, "events", "**/*.cmd.{ts,js}"),
   ],
   botGuilds: [process.env.AV_GUILD_ID ?? ""],
   silent: true,
 });
 
 client.on("ready", () => {
+  client.user?.setActivity("aviation weather");
   client.initApplicationCommands({ log: { forGuild: true, forGlobal: true } });
 });
 

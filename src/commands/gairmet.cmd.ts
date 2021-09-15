@@ -5,24 +5,26 @@ import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
 export class buttonExample {
-  @Slash("airmet", {
-    description: "Obtain airsigmets weather reports",
+  @Slash("gairmet", {
+    description: "Obtain g-airsigmets weather reports",
   })
-  async airmet(
-    @SlashOption("hourbefore", { description: "Hours between 1 to 48" })
+  async gairmet(
+    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
   ): Promise<void> {
     await interaction.deferReply();
 
     // fix hour
-    if (!hourBefore || hourBefore < 1 || hourBefore > 48) hourBefore = 1;
+    if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
+      hourBefore = 1;
+    }
 
     const aw = new AwClient();
 
     // fetch metar info
     const response = await aw.AW({
-      datasource: "AIRSIGMETS",
+      datasource: "GAIRMETS",
       hoursBeforeNow: hourBefore,
     });
 
@@ -36,9 +38,13 @@ export class buttonExample {
     const allPages = response.map((report) => {
       // prepare embed
       const embed = new MessageEmbed();
-      embed.addField("Raw text", report.raw_text);
-      embed.addField("From", report.valid_time_from);
-      embed.addField("To", report.valid_time_to);
+      embed.addField(
+        "Receipt Time",
+        new Date(report.receipt_time).toUTCString()
+      );
+      embed.addField("Issue Time", new Date(report.issue_time).toUTCString());
+      embed.addField("Expire Time", new Date(report.expire_time).toUTCString());
+      embed.addField("Valid Time", new Date(report.valid_time).toUTCString());
 
       if (report.altitude?.min_ft_msl) {
         embed.addField(
@@ -58,9 +64,7 @@ export class buttonExample {
       embed.addField(
         "Source",
         `[Aviation Weather](${aw.URI.AW({
-          datasource: "AIRSIGMETS",
-          startTime: report.valid_time_from,
-          endTime: report.valid_time_to,
+          datasource: "GAIRMETS",
         })})`
       );
 
@@ -73,7 +77,7 @@ export class buttonExample {
       );
 
       // Timestamp
-      embed.setTimestamp(new Date(report.valid_time_from));
+      embed.setTimestamp(new Date(report.valid_time));
 
       // Footer advise
       embed.setFooter(

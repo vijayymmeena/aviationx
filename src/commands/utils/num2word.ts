@@ -31,7 +31,9 @@ export const numSpoke = (num: number): string => {
     .split("")
     .map((r) => num2word(Number(r)))
     .map((w) => {
-      if (w === "invalid") return "point";
+      if (w === "invalid") {
+        return "point";
+      }
       return w;
     })
     .join(" ");
