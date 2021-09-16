@@ -13,10 +13,7 @@ const client = new Client({
     Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
     Intents.FLAGS.GUILD_VOICE_STATES,
   ],
-  classes: [
-    path.join(__dirname, "commands", "**/*.cmd.{ts,js}"),
-    path.join(__dirname, "events", "**/*.cmd.{ts,js}"),
-  ],
+  classes: [path.join(__dirname, "aviationx", "**/*.cmd.{ts,js}")],
   botGuilds: [process.env.AV_GUILD_ID ?? ""],
   silent: true,
 });

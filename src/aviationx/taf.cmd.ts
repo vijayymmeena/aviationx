@@ -1,21 +1,60 @@
-import { CommandInteraction, MessageEmbed, MessageOptions } from "discord.js";
-import { Discord, Slash, SlashOption } from "discordx";
+import {
+  Bot,
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption,
+} from "discordx";
+import {
+  CommandInteraction,
+  Message,
+  MessageEmbed,
+  MessageOptions,
+} from "discord.js";
 import { Client as AwClient } from "aviationweather";
+import { ErrorMessages } from "./utils/static";
 import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
+@Bot("aviationx")
 export class buttonExample {
-  @Slash("taf", {
-    description: "Obtain taf information for a given CIAO id",
+  @SimpleCommand("taf", {
+    description: "Obtain taf information for a given CIAO code",
   })
-  async taf(
+  simpleTaf(
+    @SimpleCommandOption("icao", { type: "STRING" }) icao: string | undefined,
+    @SimpleCommandOption("hourbefore") hourBefore: number,
+    command: SimpleCommandMessage
+  ): void {
+    !icao
+      ? command.sendUsageSyntax()
+      : this.handler(command.message, icao, hourBefore);
+  }
+
+  @Slash("taf", {
+    description: "Obtain taf information for a given CIAO code",
+  })
+  taf(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
     @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
+  ): void {
+    this.handler(interaction, icao, hourBefore);
+  }
+
+  async handler(
+    interaction: CommandInteraction | Message,
+    icao: string,
+    hourBefore: number
   ): Promise<void> {
-    await interaction.deferReply();
+    const isMessage = interaction instanceof Message;
+    if (!isMessage) {
+      await interaction.deferReply();
+    }
 
     // fix hour
     if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
@@ -31,9 +70,9 @@ export class buttonExample {
     // fetch station info
     const station = searchStation[0];
     if (!station) {
-      interaction.followUp(
-        "Looks like invalid ICAO code, Please raise an issue on github if the bot does not display information for valid ICAO codes\n\nhttps://github.com/oceanroleplay/aviationx"
-      );
+      !isMessage
+        ? interaction.followUp(ErrorMessages.InvalidIcaoMsg)
+        : interaction.reply(ErrorMessages.InvalidIcaoMsg);
       return;
     }
 
@@ -46,9 +85,8 @@ export class buttonExample {
 
     // if no info found
     if (!response.length) {
-      interaction.followUp(
-        `Data not available for ${station.site} (${station.station_id})`
-      );
+      const msg = `Data not available for ${station.site}, ${station.country} (${station.station_id})`;
+      !isMessage ? interaction.followUp(msg) : interaction.reply(msg);
       return;
     }
 
@@ -56,7 +94,9 @@ export class buttonExample {
     const allPages = response.map((tafData) => {
       // prepare embed
       const embed = new MessageEmbed();
-      embed.setTitle(`${station.site} (${station.station_id})`);
+      embed.setTitle(
+        `${station.site}, ${station.country} (${station.station_id})`
+      );
 
       // raw text
       embed.addField("Raw Text", tafData.raw_text);
@@ -184,7 +224,9 @@ export class buttonExample {
     });
 
     if (allPages.length === 1 && allPages[0]) {
-      interaction.followUp(allPages[0]);
+      !isMessage
+        ? interaction.followUp(allPages[0])
+        : interaction.reply(allPages[0]);
       return;
     } else {
       if (allPages.length < 6) {
@@ -198,6 +240,7 @@ export class buttonExample {
         sendPaginatedEmbeds(interaction, allPages, {
           type: "SELECT_MENU",
           pageText: menuoptions,
+          endLabel: `End - ${allPages.length}`,
         });
       }
     }

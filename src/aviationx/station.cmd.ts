@@ -1,18 +1,48 @@
-import { CommandInteraction, MessageEmbed } from "discord.js";
-import { Discord, Slash, SlashOption } from "discordx";
+import {
+  Bot,
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption,
+} from "discordx";
+import { CommandInteraction, Message, MessageEmbed } from "discord.js";
 import { Client as AwClient } from "aviationweather";
+import { ErrorMessages } from "./utils/static";
 
 @Discord()
+@Bot("aviationx")
 export class buttonExample {
-  @Slash("station", {
-    description: "Obtain station information for a given CIAO id",
+  @SimpleCommand("station", {
+    description: "Obtain station information for a given CIAO code",
   })
-  async station(
+  simpleMetar(
+    @SimpleCommandOption("icao", { type: "STRING" }) icao: string | undefined,
+    command: SimpleCommandMessage
+  ): void {
+    !icao ? command.sendUsageSyntax() : this.handler(command.message, icao);
+  }
+
+  @Slash("station", {
+    description: "Obtain station information for a given CIAO code",
+  })
+  station(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
     interaction: CommandInteraction
+  ): void {
+    this.handler(interaction, icao);
+  }
+
+  async handler(
+    interaction: CommandInteraction | Message,
+    icao: string
   ): Promise<void> {
-    await interaction.deferReply();
+    const isMessage = interaction instanceof Message;
+    if (!isMessage) {
+      await interaction.deferReply();
+    }
 
     const aw = new AwClient();
     const stations = await aw.AW({
@@ -21,14 +51,16 @@ export class buttonExample {
     });
     const station = stations[0];
     if (!station) {
-      interaction.followUp(
-        "Looks like invalid ICAO code, Please raise an issue on github if the bot does not display information for valid ICAO codes\n\nhttps://github.com/oceanroleplay/aviationx"
-      );
+      !isMessage
+        ? interaction.followUp(ErrorMessages.InvalidIcaoMsg)
+        : interaction.reply(ErrorMessages.InvalidIcaoMsg);
       return;
     }
 
     const embed = new MessageEmbed();
-    embed.setTitle(`${station.site} (${station.station_id})`);
+    embed.setTitle(
+      `${station.site}, ${station.country} (${station.station_id})`
+    );
 
     // wmo_id
     if (station.wmo_id) {
@@ -66,6 +98,8 @@ export class buttonExample {
     );
 
     // send
-    interaction.followUp({ embeds: [embed] });
+    !isMessage
+      ? interaction.followUp({ embeds: [embed] })
+      : interaction.reply({ embeds: [embed] });
   }
 }

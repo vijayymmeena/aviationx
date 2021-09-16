@@ -1,19 +1,48 @@
-import { CommandInteraction, MessageEmbed } from "discord.js";
-import { Discord, Slash, SlashOption } from "discordx";
+import {
+  Bot,
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption,
+} from "discordx";
+import { CommandInteraction, Message, MessageEmbed } from "discord.js";
 import { Client as AwClient } from "aviationweather";
+import { ErrorMessages } from "./utils/static";
 import { sendPaginatedEmbeds } from "@discordx/utilities";
+import { splitToBulks } from "./utils/chunk";
 
 @Discord()
+@Bot("aviationx")
 export class buttonExample {
+  @SimpleCommand("airmet", { description: "Obtain airsigmets weather reports" })
+  simpleAirmet(
+    @SimpleCommandOption("hourbefore") hourBefore: number,
+    command: SimpleCommandMessage
+  ): void {
+    this.handler(command.message, hourBefore);
+  }
+
   @Slash("airmet", {
     description: "Obtain airsigmets weather reports",
   })
-  async airmet(
+  airmet(
     @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
+  ): void {
+    this.handler(interaction, hourBefore);
+  }
+
+  async handler(
+    interaction: CommandInteraction | Message,
+    hourBefore: number
   ): Promise<void> {
-    await interaction.deferReply();
+    const isMessage = interaction instanceof Message;
+    if (!isMessage) {
+      await interaction.deferReply();
+    }
 
     // fix hour
     if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
@@ -30,7 +59,9 @@ export class buttonExample {
 
     // if no info found
     if (!response.length) {
-      interaction.followUp("Data not available for search query");
+      !isMessage
+        ? interaction.followUp(ErrorMessages.DataNotFound)
+        : interaction.reply(ErrorMessages.DataNotFound);
       return;
     }
 
@@ -66,13 +97,17 @@ export class buttonExample {
         })})`
       );
 
-      // Source
-      embed.addField(
-        "Points",
-        report.area.point
-          .map((p, index) => `${index + 1}. ${p.latitude}, ${p.longitude}`)
-          .join("\n")
-      );
+      if (report.area.point.length > 0) {
+        const chunks = splitToBulks(report.area.point, 40);
+        chunks.forEach((points) => {
+          embed.addField(
+            "Points",
+            points
+              .map((p, index) => `${index + 1}. ${p.latitude}, ${p.longitude}`)
+              .join("\n")
+          );
+        });
+      }
 
       // Timestamp
       embed.setTimestamp(new Date(report.valid_time_from));
@@ -86,17 +121,23 @@ export class buttonExample {
     });
 
     if (allPages.length === 1) {
-      interaction.followUp({ embeds: allPages });
+      !isMessage
+        ? interaction.followUp({ embeds: allPages })
+        : interaction.reply({ embeds: allPages });
       return;
     } else {
       if (allPages.length < 6) {
         sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });
       } else {
         // all pages text with observation time
-        // const menuoptions = response.map(() => "Page {page}");
+        const menuoptions = response.map(
+          (report) =>
+            `Page {page} - ${new Date(report.valid_time_from).toUTCString()}`
+        );
         sendPaginatedEmbeds(interaction, allPages, {
           type: "SELECT_MENU",
-          //  pageText: menuoptions,
+          pageText: menuoptions,
+          endLabel: `End - ${allPages.length}`,
         });
       }
     }

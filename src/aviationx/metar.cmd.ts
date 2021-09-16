@@ -1,22 +1,56 @@
-import { CommandInteraction, MessageEmbed } from "discord.js";
-import { Discord, Slash, SlashOption } from "discordx";
+import {
+  Bot,
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption,
+} from "discordx";
+import { CommandInteraction, Message, MessageEmbed } from "discord.js";
 import { Client as AwClient } from "aviationweather";
+import { ErrorMessages } from "./utils/static";
 import { numSpoke } from "./utils/num2word";
 import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
+@Bot("aviationx")
 export class buttonExample {
-  @Slash("metar", {
-    description: "Obtain metar information for a given CIAO id",
+  @SimpleCommand("metar", {
+    description: "Obtain metar information for a given CIAO code",
   })
-  async metar(
+  simpleMetar(
+    @SimpleCommandOption("icao", { type: "STRING" }) icao: string | undefined,
+    @SimpleCommandOption("hourbefore") hourBefore: number,
+    command: SimpleCommandMessage
+  ): void {
+    !icao
+      ? command.sendUsageSyntax()
+      : this.handler(command.message, icao, hourBefore);
+  }
+
+  @Slash("metar", {
+    description: "Obtain metar information for a given CIAO code",
+  })
+  metar(
     @SlashOption("station", { description: "Enter ICAO code", required: true })
     icao: string,
     @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
+  ): void {
+    this.handler(interaction, icao, hourBefore);
+  }
+
+  async handler(
+    interaction: CommandInteraction | Message,
+    icao: string,
+    hourBefore: number
   ): Promise<void> {
-    await interaction.deferReply();
+    const isMessage = interaction instanceof Message;
+    if (!isMessage) {
+      await interaction.deferReply();
+    }
 
     // fix hour
     if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
@@ -32,9 +66,9 @@ export class buttonExample {
     // fetch station info
     const station = searchStation[0];
     if (!station) {
-      interaction.followUp(
-        "Looks like invalid ICAO code, Please raise an issue on github if the bot does not display information for valid ICAO codes\n\nhttps://github.com/oceanroleplay/aviationx"
-      );
+      !isMessage
+        ? interaction.followUp(ErrorMessages.InvalidIcaoMsg)
+        : interaction.reply(ErrorMessages.InvalidIcaoMsg);
       return;
     }
 
@@ -47,9 +81,8 @@ export class buttonExample {
 
     // if no info found
     if (!response.length) {
-      interaction.followUp(
-        `Data not available for ${station.site} (${station.station_id})`
-      );
+      const msg = `Data not available for ${station.site}, ${station.country} (${station.station_id})`;
+      !isMessage ? interaction.followUp(msg) : interaction.reply(msg);
       return;
     }
 
@@ -57,7 +90,9 @@ export class buttonExample {
     const allPages = response.map((metarData) => {
       // prepare embed
       const embed = new MessageEmbed();
-      embed.setTitle(`${station.site} (${station.station_id})`);
+      embed.setTitle(
+        `${station.site}, ${station.country} (${station.station_id})`
+      );
 
       // raw text
       embed.addField("Raw Text", metarData.raw_text);
@@ -114,11 +149,15 @@ export class buttonExample {
       }
 
       // Wind
-      embed.addField(
-        "Wind",
-        `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt` +
-          (metarData.wind_gust_kt ? ` (gust ${metarData.wind_gust_kt}kt)` : "")
-      );
+      if (metarData.wind_dir_degrees) {
+        embed.addField(
+          "Wind",
+          `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt` +
+            (metarData.wind_gust_kt
+              ? ` (gust ${metarData.wind_gust_kt}kt)`
+              : "")
+        );
+      }
 
       // Altimeter
       embed.addField(
@@ -188,7 +227,9 @@ export class buttonExample {
     });
 
     if (allPages.length === 1) {
-      interaction.followUp({ embeds: allPages });
+      !isMessage
+        ? interaction.followUp({ embeds: allPages })
+        : interaction.reply({ embeds: allPages });
       return;
     } else {
       if (allPages.length < 6) {
@@ -196,11 +237,15 @@ export class buttonExample {
       } else {
         // all pages text with observation time
         const menuoptions = response.map(
-          (metarData) => `Page {page} - ${metarData.observation_time}`
+          (metarData) =>
+            `Page {page} - ${new Date(
+              metarData.observation_time
+            ).toUTCString()}`
         );
         sendPaginatedEmbeds(interaction, allPages, {
           type: "SELECT_MENU",
           pageText: menuoptions,
+          endLabel: `End - ${allPages.length}`,
         });
       }
     }

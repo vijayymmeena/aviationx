@@ -1,19 +1,49 @@
-import { CommandInteraction, MessageEmbed } from "discord.js";
-import { Discord, Slash, SlashOption } from "discordx";
+import {
+  Bot,
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption,
+} from "discordx";
+import { CommandInteraction, Message, MessageEmbed } from "discord.js";
 import { Client as AwClient } from "aviationweather";
+import { ErrorMessages } from "./utils/static";
 import { sendPaginatedEmbeds } from "@discordx/utilities";
 
 @Discord()
+@Bot("aviationx")
 export class buttonExample {
+  @SimpleCommand("airep", {
+    description: "Obtain recent aircraft weather reports",
+  })
+  simpleAirep(
+    @SimpleCommandOption("hourbefore") hourBefore: number,
+    command: SimpleCommandMessage
+  ): void {
+    this.handler(command.message, hourBefore);
+  }
+
   @Slash("airep", {
     description: "Obtain recent aircraft weather reports",
   })
-  async airep(
+  airep(
     @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
     hourBefore: number,
     interaction: CommandInteraction
+  ): void {
+    this.handler(interaction, hourBefore);
+  }
+
+  async handler(
+    interaction: Message | CommandInteraction,
+    hourBefore: number
   ): Promise<void> {
-    await interaction.deferReply();
+    const isMessage = interaction instanceof Message;
+    if (!isMessage) {
+      await interaction.deferReply();
+    }
 
     // fix hour
     if (!hourBefore || hourBefore < 1 || hourBefore > 72) {
@@ -30,7 +60,9 @@ export class buttonExample {
 
     // if no info found
     if (!response.length) {
-      interaction.followUp("Data not available for search query");
+      !isMessage
+        ? interaction.followUp(ErrorMessages.DataNotFound)
+        : interaction.reply(ErrorMessages.DataNotFound);
       return;
     }
 
@@ -56,11 +88,13 @@ export class buttonExample {
       );
 
       // Wind
-      embed.addField(
-        "Wind",
-        `${report.wind_dir_degrees}° ${report.wind_speed_kt}kt` +
-          (report.vert_gust_kt ? ` (gust ${report.vert_gust_kt}kt)` : "")
-      );
+      if (report.wind_dir_degrees) {
+        embed.addField(
+          "Wind",
+          `${report.wind_dir_degrees}° ${report.wind_speed_kt}kt` +
+            (report.vert_gust_kt ? ` (gust ${report.vert_gust_kt}kt)` : "")
+        );
+      }
 
       // Altimeter
       if (report.altitude_ft_msl) {
@@ -114,7 +148,9 @@ export class buttonExample {
     });
 
     if (allPages.length === 1) {
-      interaction.followUp({ embeds: allPages });
+      !isMessage
+        ? interaction.followUp({ embeds: allPages })
+        : interaction.reply({ embeds: allPages });
       return;
     } else {
       if (allPages.length < 6) {
@@ -123,13 +159,12 @@ export class buttonExample {
         // all pages text with observation time
         const menuoptions = response.map(
           (report) =>
-            `Page {page} - ${report.aircraft_ref} - ${new Date(
-              report.observation_time
-            ).toUTCString()}`
+            `Page {page} - ${new Date(report.observation_time).toUTCString()}`
         );
         sendPaginatedEmbeds(interaction, allPages, {
           type: "SELECT_MENU",
           pageText: menuoptions,
+          endLabel: `End - ${allPages.length}`,
         });
       }
     }
