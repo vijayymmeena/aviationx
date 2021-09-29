@@ -37,7 +37,7 @@
     "@discordx/utilities": "^1.2.2",
     "aviationweather": "^1.3.1",
     "discord.js": "^13.1.0",
-    "discordx": "^6.0.3",
+    "discordx": "^6.0.5",
     "dotenv": "^10.0.0",
     "reflect-metadata": "^0.1.13"
   }
