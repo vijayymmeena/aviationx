@@ -18,9 +18,13 @@ const client = new Client({
   silent: true,
 });
 
-client.on("ready", () => {
+client.on("ready", async () => {
   client.user?.setActivity("aviation weather");
-  client.initApplicationCommands({ log: { forGuild: true, forGlobal: true } });
+  await client.initApplicationCommands({
+    guild: { log: true },
+    global: { log: true },
+  });
+  await client.initApplicationPermissions();
 });
 
 client.on("interactionCreate", (interaction: Interaction) => {

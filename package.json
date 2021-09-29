@@ -27,17 +27,17 @@
   },
   "homepage": "https://github.com/oceanroleplay/aviationx#readme",
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.31.1",
-    "@typescript-eslint/parser": "^4.31.1",
+    "@typescript-eslint/eslint-plugin": "^4.32.0",
+    "@typescript-eslint/parser": "^4.32.0",
     "eslint": "^7.32.0",
     "prettier": "^2.4.1",
     "typescript": "^4.4.3"
   },
   "dependencies": {
-    "@discordx/utilities": "^1.1.8",
+    "@discordx/utilities": "^1.2.2",
     "aviationweather": "^1.3.1",
     "discord.js": "^13.1.0",
-    "discordx": "^5.9.3",
+    "discordx": "^6.0.3",
     "dotenv": "^10.0.0",
     "reflect-metadata": "^0.1.13"
   }
