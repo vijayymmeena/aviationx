@@ -2,6 +2,10 @@
 
 A aviation weather bot for discord.
 
+![Aviationx](img/aviationx-1.png)
+
+![Aviationx](img/aviationx-2.png)
+
 ## Commands
 
 - /metar

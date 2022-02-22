@@ -9,7 +9,6 @@
   "rules": {
     "semi": "warn",
     "quotes": "warn",
-    "sort-imports": "warn",
     "@typescript-eslint/no-empty-function": "warn",
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-empty-interface": "warn",

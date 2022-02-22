@@ -1,17 +1,21 @@
+import { Pagination, PaginationType } from "@discordx/pagination";
+import { Client as AwClient } from "aviationweather";
+import type { CommandInteraction } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
+import type { SimpleCommandMessage } from "discordx";
 import {
   Bot,
   Discord,
   SimpleCommand,
-  SimpleCommandMessage,
   SimpleCommandOption,
+  SimpleCommandOptionType,
   Slash,
   SlashOption,
 } from "discordx";
-import { CommandInteraction, Message, MessageEmbed } from "discord.js";
-import { Client as AwClient } from "aviationweather";
-import { ErrorMessages } from "./utils/static";
-import { numSpoke } from "./utils/num2word";
-import { sendPaginatedEmbeds } from "@discordx/utilities";
+
+import { searchICAO } from "./utils/common.js";
+import { numSpoke } from "./utils/num2word.js";
+import { ErrorMessages, supportRow } from "./utils/static.js";
 
 @Discord()
 @Bot("aviationx")
@@ -20,8 +24,9 @@ export class buttonExample {
     description: "Obtain metar information for a given CIAO code",
   })
   simpleMetar(
-    @SimpleCommandOption("icao", { type: "STRING" }) icao: string | undefined,
-    @SimpleCommandOption("hourbefore") hourBefore: number,
+    @SimpleCommandOption("icao", { type: SimpleCommandOptionType.String })
+    icao: string | undefined,
+    @SimpleCommandOption("hour-before") hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     !icao
@@ -33,9 +38,17 @@ export class buttonExample {
     description: "Obtain metar information for a given CIAO code",
   })
   metar(
-    @SlashOption("station", { description: "Enter ICAO code", required: true })
+    @SlashOption("station", {
+      autocomplete: searchICAO,
+      description: "Enter ICAO code",
+      type: "STRING",
+    })
     icao: string,
-    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
+    @SlashOption("hour-before", {
+      description: "Hours between 1 to 72",
+      required: false,
+      type: "NUMBER",
+    })
     hourBefore: number,
     interaction: CommandInteraction
   ): void {
@@ -67,16 +80,22 @@ export class buttonExample {
     const station = searchStation[0];
     if (!station) {
       !isMessage
-        ? interaction.followUp(ErrorMessages.InvalidIcaoMsg)
-        : interaction.reply(ErrorMessages.InvalidIcaoMsg);
+        ? interaction.followUp({
+            components: [supportRow],
+            content: ErrorMessages.InvalidICAOMessage,
+          })
+        : interaction.reply({
+            components: [supportRow],
+            content: ErrorMessages.InvalidICAOMessage,
+          });
       return;
     }
 
     // fetch metar info
     const response = await aw.AW({
       datasource: "METARS",
-      stationString: station.station_id,
       hoursBeforeNow: hourBefore,
+      stationString: station.station_id,
     });
 
     // if no info found
@@ -86,7 +105,6 @@ export class buttonExample {
       return;
     }
 
-    // response.forEach(console.log);
     const allPages = response.map((metarData) => {
       // prepare embed
       const embed = new MessageEmbed();
@@ -111,10 +129,11 @@ export class buttonExample {
           )} kilometers.`
         );
       }
-
+      /* cspell: disable-next-line */
       if (metarData.altim_in_hg) {
         spoken.push(
           `Altimeter ${numSpoke(
+            /* cspell: disable-next-line */
             Number((metarData.altim_in_hg * 33.863886666667).toFixed(2))
           )} hPa.`
         );
@@ -126,7 +145,9 @@ export class buttonExample {
         );
       }
 
+      /* cspell: disable-next-line */
       if (metarData.dewpoint_c) {
+        /* cspell: disable-next-line */
         spoken.push(`Dewpoint ${numSpoke(metarData.temp_c)} degree celsius.`);
       }
       embed.addField("Spoken", spoken.join(" "));
@@ -162,7 +183,9 @@ export class buttonExample {
       // Altimeter
       embed.addField(
         "Altimeter",
+        /* cspell: disable-next-line */
         `${(metarData.altim_in_hg * 33.863886666667).toFixed(2)} hPa` +
+          /* cspell: disable-next-line */
           ` (${metarData.altim_in_hg.toFixed(2)} inHg)`
       );
 
@@ -171,10 +194,14 @@ export class buttonExample {
         "Temperature",
         `${metarData.temp_c}°C (${((metarData.temp_c * 9) / 5 + 32).toFixed(
           2
-        )}°F) - Dewpoint: ${metarData.dewpoint_c}°C (${(
-          (metarData.dewpoint_c * 9) / 5 +
-          32
-        ).toFixed(2)}°F)`
+          /* cspell: disable-next-line */
+        )}°F) - Dewpoint: ${
+          /* cspell: disable-next-line */
+          metarData.dewpoint_c
+        }°C (${
+          /* cspell: disable-next-line */
+          ((metarData.dewpoint_c * 9) / 5 + 32).toFixed(2)
+        }°F)`
       );
 
       // Flight Rule
@@ -209,9 +236,9 @@ export class buttonExample {
         "Source",
         `[Aviation Weather](${aw.URI.AW({
           datasource: "METARS",
-          stationString: station.station_id,
-          startTime: metarData.observation_time,
           endTime: metarData.observation_time,
+          startTime: metarData.observation_time,
+          stationString: station.station_id,
         })})`
       );
 
@@ -219,9 +246,9 @@ export class buttonExample {
       embed.setTimestamp(new Date(metarData.observation_time));
 
       // Footer advise
-      embed.setFooter(
-        "This data should only be used for planning purposes | Observation Time"
-      );
+      embed.setFooter({
+        text: "This data should only be used for planning purposes | Observation Time",
+      });
 
       return embed;
     });
@@ -233,20 +260,26 @@ export class buttonExample {
       return;
     } else {
       if (allPages.length < 6) {
-        sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          type: PaginationType.Button,
+        }).send();
       } else {
-        // all pages text with observation time
-        const menuoptions = response.map(
+        // all pages text with observation time .
+        const menuOptions = response.map(
           (metarData) =>
             `Page {page} - ${new Date(
               metarData.observation_time
             ).toUTCString()}`
         );
-        sendPaginatedEmbeds(interaction, allPages, {
-          type: "SELECT_MENU",
-          pageText: menuoptions,
-          endLabel: `End - ${allPages.length}`,
-        });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          labels: {
+            end: `End - ${allPages.length}`,
+          },
+          pageText: menuOptions,
+          type: PaginationType.SelectMenu,
+        }).send();
       }
     }
   }

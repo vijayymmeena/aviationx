@@ -1,16 +1,18 @@
+import { Pagination, PaginationType } from "@discordx/pagination";
+import { Client as AwClient } from "aviationweather";
+import type { CommandInteraction } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
+import type { SimpleCommandMessage } from "discordx";
 import {
   Bot,
   Discord,
   SimpleCommand,
-  SimpleCommandMessage,
   SimpleCommandOption,
   Slash,
   SlashOption,
 } from "discordx";
-import { CommandInteraction, Message, MessageEmbed } from "discord.js";
-import { Client as AwClient } from "aviationweather";
-import { ErrorMessages } from "./utils/static";
-import { sendPaginatedEmbeds } from "@discordx/utilities";
+
+import { ErrorMessages } from "./utils/static.js";
 
 @Discord()
 @Bot("aviationx")
@@ -19,7 +21,7 @@ export class buttonExample {
     description: "Obtain recent aircraft weather reports",
   })
   simpleAirep(
-    @SimpleCommandOption("hourbefore") hourBefore: number,
+    @SimpleCommandOption("hour-before") hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     this.handler(command.message, hourBefore);
@@ -29,7 +31,11 @@ export class buttonExample {
     description: "Obtain recent aircraft weather reports",
   })
   airep(
-    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
+    @SlashOption("hour-before", {
+      description: "Hours between 1 to 72",
+      required: false,
+      type: "NUMBER",
+    })
     hourBefore: number,
     interaction: CommandInteraction
   ): void {
@@ -66,7 +72,6 @@ export class buttonExample {
       return;
     }
 
-    // response.forEach(console.log);
     const allPages = response.map((report) => {
       // prepare embed
       const embed = new MessageEmbed();
@@ -131,8 +136,8 @@ export class buttonExample {
         "Source",
         `[Aviation Weather](${aw.URI.AW({
           datasource: "AIRCRAFTREPORTS",
-          startTime: report.observation_time,
           endTime: report.observation_time,
+          startTime: report.observation_time,
         })})`
       );
 
@@ -140,9 +145,9 @@ export class buttonExample {
       embed.setTimestamp(new Date(report.observation_time));
 
       // Footer advise
-      embed.setFooter(
-        "This data should only be used for planning purposes | Observation Time"
-      );
+      embed.setFooter({
+        text: "This data should only be used for planning purposes | Observation Time",
+      });
 
       return embed;
     });
@@ -154,18 +159,24 @@ export class buttonExample {
       return;
     } else {
       if (allPages.length < 6) {
-        sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          type: PaginationType.Button,
+        }).send();
       } else {
         // all pages text with observation time
-        const menuoptions = response.map(
+        const menuOptions = response.map(
           (report) =>
             `Page {page} - ${new Date(report.observation_time).toUTCString()}`
         );
-        sendPaginatedEmbeds(interaction, allPages, {
-          type: "SELECT_MENU",
-          pageText: menuoptions,
-          endLabel: `End - ${allPages.length}`,
-        });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          labels: {
+            end: `End - ${allPages.length}`,
+          },
+          pageText: menuOptions,
+          type: PaginationType.SelectMenu,
+        }).send();
       }
     }
   }

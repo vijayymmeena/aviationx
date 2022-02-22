@@ -1,21 +1,20 @@
 import "reflect-metadata";
+import "dotenv/config";
 import { Intents, Interaction, Message } from "discord.js";
+import { dirname, importx } from "@discordx/importer";
 import { Client } from "discordx";
-import dotenv from "dotenv";
-import path from "path";
-dotenv.config();
 
 const client = new Client({
-  prefix: "!",
+  botId: "aviationx",
   intents: [
     Intents.FLAGS.GUILDS,
     Intents.FLAGS.GUILD_MESSAGES,
     Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
     Intents.FLAGS.GUILD_VOICE_STATES,
   ],
-  classes: [path.join(__dirname, "aviationx", "**/*.cmd.{ts,js}")],
-  botGuilds: [process.env.AV_GUILD_ID ?? ""],
-  silent: true,
+  simpleCommand: {
+    prefix: "!",
+  },
 });
 
 client.on("ready", async () => {
@@ -38,4 +37,12 @@ client.on("messageCreate", (message: Message) => {
   client.executeCommand(message);
 });
 
-client.login(process.env.AV_BOT_TOKEN ?? ""); // provide your bot token
+importx(dirname(import.meta.url) + "/{events,commands}/**/*.{ts,js}").then(
+  () => {
+    if (!process.env.BOT_TOKEN) {
+      throw Error("BOT_TOKEN not found in your environment!");
+    }
+
+    client.login(process.env.BOT_TOKEN);
+  }
+);

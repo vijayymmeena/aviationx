@@ -1,21 +1,20 @@
+import { Pagination, PaginationType } from "@discordx/pagination";
+import { Client as AwClient } from "aviationweather";
+import type { CommandInteraction, MessageOptions } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
+import type { SimpleCommandMessage } from "discordx";
 import {
   Bot,
   Discord,
   SimpleCommand,
-  SimpleCommandMessage,
   SimpleCommandOption,
+  SimpleCommandOptionType,
   Slash,
   SlashOption,
 } from "discordx";
-import {
-  CommandInteraction,
-  Message,
-  MessageEmbed,
-  MessageOptions,
-} from "discord.js";
-import { Client as AwClient } from "aviationweather";
-import { ErrorMessages } from "./utils/static";
-import { sendPaginatedEmbeds } from "@discordx/utilities";
+
+import { searchICAO } from "./utils/common.js";
+import { ErrorMessages, supportRow } from "./utils/static.js";
 
 @Discord()
 @Bot("aviationx")
@@ -24,8 +23,9 @@ export class buttonExample {
     description: "Obtain taf information for a given CIAO code",
   })
   simpleTaf(
-    @SimpleCommandOption("icao", { type: "STRING" }) icao: string | undefined,
-    @SimpleCommandOption("hourbefore") hourBefore: number,
+    @SimpleCommandOption("icao", { type: SimpleCommandOptionType.String })
+    icao: string | undefined,
+    @SimpleCommandOption("hour-before") hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     !icao
@@ -37,9 +37,17 @@ export class buttonExample {
     description: "Obtain taf information for a given CIAO code",
   })
   taf(
-    @SlashOption("station", { description: "Enter ICAO code", required: true })
+    @SlashOption("station", {
+      autocomplete: searchICAO,
+      description: "Enter ICAO code",
+      type: "STRING",
+    })
     icao: string,
-    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
+    @SlashOption("hour-before", {
+      description: "Hours between 1 to 72",
+      required: false,
+      type: "NUMBER",
+    })
     hourBefore: number,
     interaction: CommandInteraction
   ): void {
@@ -71,16 +79,22 @@ export class buttonExample {
     const station = searchStation[0];
     if (!station) {
       !isMessage
-        ? interaction.followUp(ErrorMessages.InvalidIcaoMsg)
-        : interaction.reply(ErrorMessages.InvalidIcaoMsg);
+        ? interaction.followUp({
+            components: [supportRow],
+            content: ErrorMessages.InvalidICAOMessage,
+          })
+        : interaction.reply({
+            components: [supportRow],
+            content: ErrorMessages.InvalidICAOMessage,
+          });
       return;
     }
 
     // fetch metar info
     const response = await aw.AW({
       datasource: "TAFS",
-      stationString: station.station_id,
       hoursBeforeNow: hourBefore,
+      stationString: station.station_id,
     });
 
     // if no info found
@@ -90,7 +104,6 @@ export class buttonExample {
       return;
     }
 
-    // response.forEach(console.log);
     const allPages = response.map((tafData) => {
       // prepare embed
       const embed = new MessageEmbed();
@@ -145,9 +158,9 @@ export class buttonExample {
         "Source",
         `[Aviation Weather](${aw.URI.AW({
           datasource: "TAFS",
-          stationString: station.station_id,
-          startTime: tafData.issue_time,
           endTime: tafData.issue_time,
+          startTime: tafData.issue_time,
+          stationString: station.station_id,
           timeType: "issue",
         })})`
       );
@@ -156,22 +169,30 @@ export class buttonExample {
       embed.setTimestamp(new Date(tafData.issue_time));
 
       // Footer advise
-      embed.setFooter(
-        "This data should only be used for planning purposes | Issue Time"
-      );
+      embed.setFooter({
+        text: "This data should only be used for planning purposes | Issue Time",
+      });
 
       const forecasts = tafData.forecast.map((fr, i) => {
-        const fembed = new MessageEmbed();
-        fembed.setTitle(
+        const forecastEmbed = new MessageEmbed();
+        forecastEmbed.setTitle(
           `Forecast ${i + 1} - ${station.site} (${station.station_id})`
         );
 
-        fembed.addField("From", `${new Date(fr.fcst_time_from).toUTCString()}`);
-        fembed.addField("To", `${new Date(fr.fcst_time_to).toUTCString()}`);
+        forecastEmbed.addField(
+          "From",
+          /* cspell: disable-next-line */
+          `${new Date(fr.fcst_time_from).toUTCString()}`
+        );
+        forecastEmbed.addField(
+          "To",
+          /* cspell: disable-next-line */
+          `${new Date(fr.fcst_time_to).toUTCString()}`
+        );
 
         // Wind
         if (fr.wind_dir_degrees) {
-          fembed.addField(
+          forecastEmbed.addField(
             "Wind",
             `${fr.wind_dir_degrees}° ${fr.wind_speed_kt}kt` +
               (fr.wind_gust_kt ? ` (gust ${fr.wind_gust_kt}kt)` : "")
@@ -180,7 +201,7 @@ export class buttonExample {
 
         // Visibility
         if (fr.visibility_statute_mi) {
-          fembed.addField(
+          forecastEmbed.addField(
             "Visibility",
             `${fr.visibility_statute_mi.toFixed(2)} sm (${(
               fr.visibility_statute_mi * 1.609344
@@ -202,18 +223,18 @@ export class buttonExample {
               );
             })
             .join("\n");
-          fembed.addField("Cloud", cloudInfo);
+          forecastEmbed.addField("Cloud", cloudInfo);
         }
 
         if (fr.change_indicator) {
-          fembed.addField("Change indicator", `${fr.change_indicator}`);
+          forecastEmbed.addField("Change indicator", `${fr.change_indicator}`);
         }
 
         if (fr.wx_string) {
-          fembed.addField("Change indicator", `${fr.wx_string}`);
+          forecastEmbed.addField("Change indicator", `${fr.wx_string}`);
         }
 
-        return fembed;
+        return forecastEmbed;
       });
 
       const msg: MessageOptions = {
@@ -230,18 +251,24 @@ export class buttonExample {
       return;
     } else {
       if (allPages.length < 6) {
-        sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          type: PaginationType.Button,
+        }).send();
       } else {
         // all pages text with observation time
-        const menuoptions = response.map(
+        const menuOptions = response.map(
           (metarData) =>
             `Page {page} - ${new Date(metarData.issue_time).toUTCString()}`
         );
-        sendPaginatedEmbeds(interaction, allPages, {
-          type: "SELECT_MENU",
-          pageText: menuoptions,
-          endLabel: `End - ${allPages.length}`,
-        });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          labels: {
+            end: `End - ${allPages.length}`,
+          },
+          pageText: menuOptions,
+          type: PaginationType.SelectMenu,
+        }).send();
       }
     }
   }

@@ -1,34 +1,42 @@
+import { Pagination, PaginationType } from "@discordx/pagination";
+import { Client as AwClient } from "aviationweather";
+import type { CommandInteraction } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
+import type { SimpleCommandMessage } from "discordx";
 import {
   Bot,
   Discord,
   SimpleCommand,
-  SimpleCommandMessage,
   SimpleCommandOption,
   Slash,
   SlashOption,
 } from "discordx";
-import { CommandInteraction, Message, MessageEmbed } from "discord.js";
-import { Client as AwClient } from "aviationweather";
-import { ErrorMessages } from "./utils/static";
-import { sendPaginatedEmbeds } from "@discordx/utilities";
-import { splitToBulks } from "./utils/chunk";
+
+import { splitToBulks } from "./utils/chunk.js";
+import { ErrorMessages } from "./utils/static.js";
 
 @Discord()
 @Bot("aviationx")
 export class buttonExample {
-  @SimpleCommand("airmet", { description: "Obtain airsigmets weather reports" })
-  simpleAirmet(
-    @SimpleCommandOption("hourbefore") hourBefore: number,
+  @SimpleCommand("gairmet", {
+    description: "Obtain g-airsigmets weather reports",
+  })
+  simpleGairmet(
+    @SimpleCommandOption("hour-before") hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     this.handler(command.message, hourBefore);
   }
 
-  @Slash("airmet", {
-    description: "Obtain airsigmets weather reports",
+  @Slash("gairmet", {
+    description: "Obtain g-airsigmets weather reports",
   })
-  airmet(
-    @SlashOption("hourbefore", { description: "Hours between 1 to 72" })
+  gairmet(
+    @SlashOption("hour-before", {
+      description: "Hours between 1 to 72",
+      required: false,
+      type: "NUMBER",
+    })
     hourBefore: number,
     interaction: CommandInteraction
   ): void {
@@ -53,7 +61,7 @@ export class buttonExample {
 
     // fetch metar info
     const response = await aw.AW({
-      datasource: "AIRSIGMETS",
+      datasource: "GAIRMETS",
       hoursBeforeNow: hourBefore,
     });
 
@@ -65,13 +73,16 @@ export class buttonExample {
       return;
     }
 
-    // response.forEach(console.log);
     const allPages = response.map((report) => {
       // prepare embed
       const embed = new MessageEmbed();
-      embed.addField("Raw text", report.raw_text);
-      embed.addField("From", new Date(report.valid_time_from).toUTCString());
-      embed.addField("To", new Date(report.valid_time_to).toUTCString());
+      embed.addField(
+        "Receipt Time",
+        new Date(report.receipt_time).toUTCString()
+      );
+      embed.addField("Issue Time", new Date(report.issue_time).toUTCString());
+      embed.addField("Expire Time", new Date(report.expire_time).toUTCString());
+      embed.addField("Valid Time", new Date(report.valid_time).toUTCString());
 
       if (report.altitude?.min_ft_msl) {
         embed.addField(
@@ -91,9 +102,7 @@ export class buttonExample {
       embed.addField(
         "Source",
         `[Aviation Weather](${aw.URI.AW({
-          datasource: "AIRSIGMETS",
-          startTime: report.valid_time_from,
-          endTime: report.valid_time_to,
+          datasource: "GAIRMETS",
         })})`
       );
 
@@ -110,12 +119,12 @@ export class buttonExample {
       }
 
       // Timestamp
-      embed.setTimestamp(new Date(report.valid_time_from));
+      embed.setTimestamp(new Date(report.issue_time));
 
       // Footer advise
-      embed.setFooter(
-        "This data should only be used for planning purposes | Observation Time"
-      );
+      embed.setFooter({
+        text: "This data should only be used for planning purposes | Observation Time",
+      });
 
       return embed;
     });
@@ -127,18 +136,24 @@ export class buttonExample {
       return;
     } else {
       if (allPages.length < 6) {
-        sendPaginatedEmbeds(interaction, allPages, { type: "BUTTON" });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          type: PaginationType.Button,
+        }).send();
       } else {
         // all pages text with observation time
-        const menuoptions = response.map(
+        const menuOptions = response.map(
           (report) =>
-            `Page {page} - ${new Date(report.valid_time_from).toUTCString()}`
+            `Page {page} - ${new Date(report.issue_time).toUTCString()}`
         );
-        sendPaginatedEmbeds(interaction, allPages, {
-          type: "SELECT_MENU",
-          pageText: menuoptions,
-          endLabel: `End - ${allPages.length}`,
-        });
+        new Pagination(interaction, allPages, {
+          enableExit: true,
+          labels: {
+            end: `End - ${allPages.length}`,
+          },
+          pageText: menuOptions,
+          type: PaginationType.SelectMenu,
+        }).send();
       }
     }
   }

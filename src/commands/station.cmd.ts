@@ -1,15 +1,19 @@
+import { Client as AwClient } from "aviationweather";
+import type { CommandInteraction } from "discord.js";
+import { Message, MessageEmbed } from "discord.js";
+import type { SimpleCommandMessage } from "discordx";
 import {
   Bot,
   Discord,
   SimpleCommand,
-  SimpleCommandMessage,
   SimpleCommandOption,
+  SimpleCommandOptionType,
   Slash,
   SlashOption,
 } from "discordx";
-import { CommandInteraction, Message, MessageEmbed } from "discord.js";
-import { Client as AwClient } from "aviationweather";
-import { ErrorMessages } from "./utils/static";
+
+import { searchICAO } from "./utils/common.js";
+import { ErrorMessages, supportRow } from "./utils/static.js";
 
 @Discord()
 @Bot("aviationx")
@@ -18,7 +22,8 @@ export class buttonExample {
     description: "Obtain station information for a given CIAO code",
   })
   simpleMetar(
-    @SimpleCommandOption("icao", { type: "STRING" }) icao: string | undefined,
+    @SimpleCommandOption("icao", { type: SimpleCommandOptionType.String })
+    icao: string | undefined,
     command: SimpleCommandMessage
   ): void {
     !icao ? command.sendUsageSyntax() : this.handler(command.message, icao);
@@ -28,7 +33,11 @@ export class buttonExample {
     description: "Obtain station information for a given CIAO code",
   })
   station(
-    @SlashOption("station", { description: "Enter ICAO code", required: true })
+    @SlashOption("station", {
+      autocomplete: searchICAO,
+      description: "Enter ICAO code",
+      type: "STRING",
+    })
     icao: string,
     interaction: CommandInteraction
   ): void {
@@ -52,8 +61,14 @@ export class buttonExample {
     const station = stations[0];
     if (!station) {
       !isMessage
-        ? interaction.followUp(ErrorMessages.InvalidIcaoMsg)
-        : interaction.reply(ErrorMessages.InvalidIcaoMsg);
+        ? interaction.followUp({
+            components: [supportRow],
+            content: ErrorMessages.InvalidICAOMessage,
+          })
+        : interaction.reply({
+            components: [supportRow],
+            content: ErrorMessages.InvalidICAOMessage,
+          });
       return;
     }
 
