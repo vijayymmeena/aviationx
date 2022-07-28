@@ -17,7 +17,7 @@ A aviation weather bot for discord.
 
 # Need bot in your server?
 
-[click here to invite bot](https://discord.com/api/oauth2/authorize?client_id=883415517417840710&permissions=380141428544&scope=bot%20applications.commands)
+[click here to invite bot](https://discord.com/api/oauth2/authorize?client_id=883415517417840710&permissions=2147485760&scope=bot%20applications.commands)
 
 ## Help or support
 
