@@ -1,9 +1,12 @@
 import { Client as AwClient } from "aviationweather";
 import type { CommandInteraction } from "discord.js";
-import { Message, MessageEmbed } from "discord.js";
+import {
+  ApplicationCommandOptionType,
+  EmbedBuilder,
+  Message,
+} from "discord.js";
 import type { SimpleCommandMessage } from "discordx";
 import {
-  Bot,
   Discord,
   SimpleCommand,
   SimpleCommandOption,
@@ -12,31 +15,33 @@ import {
   SlashOption,
 } from "discordx";
 
-import { searchICAO } from "./utils/common.js";
-import { ErrorMessages, supportRow } from "./utils/static.js";
+import { searchICAO } from "../utils/common.js";
+import { ErrorMessages, supportRow } from "../utils/static.js";
 
 @Discord()
-@Bot("aviationx")
-export class buttonExample {
-  @SimpleCommand("station", {
+export class Example {
+  @SimpleCommand({
     description: "Obtain station information for a given CIAO code",
+    name: "station",
   })
   simpleMetar(
-    @SimpleCommandOption("icao", { type: SimpleCommandOptionType.String })
+    @SimpleCommandOption({ name: "icao", type: SimpleCommandOptionType.String })
     icao: string | undefined,
     command: SimpleCommandMessage
   ): void {
     !icao ? command.sendUsageSyntax() : this.handler(command.message, icao);
   }
 
-  @Slash("station", {
+  @Slash({
     description: "Obtain station information for a given CIAO code",
+    name: "station",
   })
   station(
-    @SlashOption("station", {
+    @SlashOption({
       autocomplete: searchICAO,
       description: "Enter ICAO code",
-      type: "STRING",
+      name: "station",
+      type: ApplicationCommandOptionType.String,
     })
     icao: string,
     interaction: CommandInteraction
@@ -72,45 +77,49 @@ export class buttonExample {
       return;
     }
 
-    const embed = new MessageEmbed();
+    const embed = new EmbedBuilder();
     embed.setTitle(
       `${station.site}, ${station.country} (${station.station_id})`
     );
 
     // wmo_id
     if (station.wmo_id) {
-      embed.addField("WMO Id", `${station.wmo_id}`);
+      embed.addFields({ name: "WMO Id", value: `${station.wmo_id}` });
     }
 
     // Location
-    embed.addField(
-      "Location",
-      `[Google Map](http://maps.google.com/maps?q=${station.latitude},${station.longitude})` +
-        ` (${station.latitude.toFixed(2)}, ${station.longitude.toFixed(2)})`
-    );
+    embed.addFields({
+      name: "Location",
+      value:
+        `[Google Map](http://maps.google.com/maps?q=${station.latitude},${station.longitude})` +
+        ` (${station.latitude.toFixed(2)}, ${station.longitude.toFixed(2)})`,
+    });
 
     // State
     if (station.state) {
-      embed.addField("State", `${station.state}`);
+      embed.addFields({ name: "State", value: `${station.state}` });
     }
 
     // Country
-    embed.addField("Country", `${station.country}`);
+    embed.addFields({ name: "Country", value: `${station.country}` });
 
     // Type
-    embed.addField("Site type", `${station.site_type}`);
+    embed.addFields({ name: "Site type", value: `${station.site_type}` });
 
     // Type
-    embed.addField("Elevation", `${station.elevation_m} meters MSL`);
+    embed.addFields({
+      name: "Elevation",
+      value: `${station.elevation_m} meters MSL`,
+    });
 
     // Source
-    embed.addField(
-      "Source",
-      `[Aviation Weather](${aw.URI.AW({
+    embed.addFields({
+      name: "Source",
+      value: `[Aviation Weather](${aw.URI.AW({
         datasource: "STATIONS",
         stationString: station.station_id,
-      })})`
-    );
+      })})`,
+    });
 
     // send
     !isMessage

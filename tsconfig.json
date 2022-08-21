@@ -1,20 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ESNEXT",
-    "module": "ESNEXT",
+    "target": "ESNext",
+    "module": "ESNext",
     "outDir": "build",
     "rootDir": "src",
     "strict": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
 
-    /* Experimental Options */
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
-    /* Advanced Options */
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "noUncheckedIndexedAccess": true,
-    "strictNullChecks": true
-  }
+    "skipLibCheck": false,
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": ["build", "node_modules"]
 }

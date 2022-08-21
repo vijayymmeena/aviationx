@@ -1,10 +1,13 @@
 import { Pagination, PaginationType } from "@discordx/pagination";
 import { Client as AwClient } from "aviationweather";
 import type { CommandInteraction } from "discord.js";
-import { Message, MessageEmbed } from "discord.js";
+import {
+  ApplicationCommandOptionType,
+  EmbedBuilder,
+  Message,
+} from "discord.js";
 import type { SimpleCommandMessage } from "discordx";
 import {
-  Bot,
   Discord,
   SimpleCommand,
   SimpleCommandOption,
@@ -12,28 +15,32 @@ import {
   SlashOption,
 } from "discordx";
 
-import { splitToBulks } from "./utils/chunk.js";
-import { ErrorMessages } from "./utils/static.js";
+import { splitToBulks } from "../utils/chunk.js";
+import { ErrorMessages } from "../utils/static.js";
 
 @Discord()
-@Bot("aviationx")
-export class buttonExample {
-  @SimpleCommand("airmet", { description: "Obtain airsigmets weather reports" })
+export class Example {
+  @SimpleCommand({
+    description: "Obtain airsigmets weather reports",
+    name: "airmet",
+  })
   simpleAirmet(
-    @SimpleCommandOption("hour-before") hourBefore: number,
+    @SimpleCommandOption({ name: "hour-before" }) hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     this.handler(command.message, hourBefore);
   }
 
-  @Slash("airmet", {
+  @Slash({
     description: "Obtain airsigmets weather reports",
+    name: "airmet",
   })
   airmet(
-    @SlashOption("hour-before", {
+    @SlashOption({
       description: "Hours between 1 to 72",
+      name: "hour-before",
       required: false,
-      type: "NUMBER",
+      type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
     interaction: CommandInteraction
@@ -73,44 +80,50 @@ export class buttonExample {
 
     const allPages = response.map((report) => {
       // prepare embed
-      const embed = new MessageEmbed();
-      embed.addField("Raw text", report.raw_text);
-      embed.addField("From", new Date(report.valid_time_from).toUTCString());
-      embed.addField("To", new Date(report.valid_time_to).toUTCString());
+      const embed = new EmbedBuilder();
+      embed.addFields({ name: "Raw text", value: report.raw_text });
+      embed.addFields({
+        name: "From",
+        value: new Date(report.valid_time_from).toUTCString(),
+      });
+      embed.addFields({
+        name: "To",
+        value: new Date(report.valid_time_to).toUTCString(),
+      });
 
       if (report.altitude?.min_ft_msl) {
-        embed.addField(
-          "Minimum altitude",
-          `${report.altitude.min_ft_msl} ft MSL`
-        );
+        embed.addFields({
+          name: "Minimum altitude",
+          value: `${report.altitude.min_ft_msl} ft MSL`,
+        });
       }
 
       if (report.altitude?.max_ft_msl) {
-        embed.addField(
-          "Maximum altitude",
-          `${report.altitude.max_ft_msl} ft MSL`
-        );
+        embed.addFields({
+          name: "Maximum altitude",
+          value: `${report.altitude.max_ft_msl} ft MSL`,
+        });
       }
 
       // Source
-      embed.addField(
-        "Source",
-        `[Aviation Weather](${aw.URI.AW({
+      embed.addFields({
+        name: "Source",
+        value: `[Aviation Weather](${aw.URI.AW({
           datasource: "AIRSIGMETS",
           endTime: report.valid_time_to,
           startTime: report.valid_time_from,
-        })})`
-      );
+        })})`,
+      });
 
       if (report.area.point.length > 0) {
         const chunks = splitToBulks(report.area.point, 40);
         chunks.forEach((points) => {
-          embed.addField(
-            "Points",
-            points
+          embed.addFields({
+            name: "Points",
+            value: points
               .map((p, index) => `${index + 1}. ${p.latitude}, ${p.longitude}`)
-              .join("\n")
-          );
+              .join("\n"),
+          });
         });
       }
 

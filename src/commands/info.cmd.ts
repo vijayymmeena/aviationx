@@ -1,12 +1,11 @@
 import { randomInt } from "crypto";
 import type { Client, CommandInteraction } from "discord.js";
-import { MessageEmbed } from "discord.js";
-import { Bot, Discord, Slash } from "discordx";
+import { EmbedBuilder } from "discord.js";
+import { Discord, Slash } from "discordx";
 
-import { supportRow } from "./utils/static.js";
+import { supportRow } from "../utils/static.js";
 
 @Discord()
-@Bot("aviationx")
 export class Command {
   totalMembers(client: Client<boolean>): number {
     let retNum = 0;
@@ -17,47 +16,70 @@ export class Command {
   }
 
   @Slash()
-  info(interaction: CommandInteraction): void {
+  async info(interaction: CommandInteraction): Promise<void> {
     if (!interaction.client.user || !interaction.guild) {
       return;
     }
 
-    const embed = new MessageEmbed();
+    const embed = new EmbedBuilder();
     embed.setTitle("Information");
     embed.setAuthor({
       iconURL: interaction.client.user.displayAvatarURL(),
       name: interaction.client.user.username,
       url: "https://github.com/oceanroleplay/aviationx",
     });
+
     embed.setColor(randomInt(50000));
     embed.setTimestamp();
+    embed.addFields({
+      inline: true,
+      name: "Guild Name",
+      value: interaction.guild.name,
+    });
 
-    embed.addField("Guild Name", interaction.guild.name, true);
-    embed.addField("Guild Members", `${interaction.guild.memberCount}`, true);
-    embed.addField("Guild Id", interaction.guild.id, true);
-    embed.addField(
-      "Total Servers",
-      `${interaction.client.guilds.cache.size}`,
-      true
-    );
-    embed.addField(
-      "Total Members",
-      `${this.totalMembers(interaction.client)}`,
-      true
-    );
-    embed.addField("\u200f", "\u200f", true);
-    embed.addField("Developer", "Harry#5791", true);
-    embed.addField(
-      "Framework",
-      "[discordx](https://www.npmjs.com/package/discordx)",
-      true
-    );
-    embed.addField(
-      "Library",
-      "[aviationweather](https://www.npmjs.com/package/aviationweather)",
-      true
-    );
+    embed.addFields({
+      inline: true,
+      name: "Guild Members",
+      value: `${interaction.guild.memberCount}`,
+    });
 
-    interaction.reply({ components: [supportRow], embeds: [embed] });
+    embed.addFields({
+      inline: true,
+      name: "Guild Id",
+      value: interaction.guild.id,
+    });
+
+    embed.addFields({
+      inline: true,
+      name: "Total Servers",
+      value: `${interaction.client.guilds.cache.size}`,
+    });
+
+    embed.addFields({
+      inline: true,
+      name: "Total Members",
+      value: `${this.totalMembers(interaction.client)}`,
+    });
+
+    embed.addFields({ inline: true, name: "\u200f", value: "\u200f" });
+    embed.addFields({
+      inline: true,
+      name: "Developer",
+      value: "Harry#5791",
+    });
+
+    embed.addFields({
+      inline: true,
+      name: "Framework",
+      value: "[discordx](https://www.npmjs.com/package/discordx)",
+    });
+
+    embed.addFields({
+      inline: true,
+      name: "Library",
+      value: "[aviationweather](https://www.npmjs.com/package/aviationweather)",
+    });
+
+    await interaction.reply({ components: [supportRow], embeds: [embed] });
   }
 }

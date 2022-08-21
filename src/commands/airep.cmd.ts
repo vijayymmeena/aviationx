@@ -1,10 +1,13 @@
 import { Pagination, PaginationType } from "@discordx/pagination";
 import { Client as AwClient } from "aviationweather";
 import type { CommandInteraction } from "discord.js";
-import { Message, MessageEmbed } from "discord.js";
+import {
+  ApplicationCommandOptionType,
+  EmbedBuilder,
+  Message,
+} from "discord.js";
 import type { SimpleCommandMessage } from "discordx";
 import {
-  Bot,
   Discord,
   SimpleCommand,
   SimpleCommandOption,
@@ -12,29 +15,31 @@ import {
   SlashOption,
 } from "discordx";
 
-import { ErrorMessages } from "./utils/static.js";
+import { ErrorMessages } from "../utils/static.js";
 
 @Discord()
-@Bot("aviationx")
-export class buttonExample {
-  @SimpleCommand("airep", {
+export class Example {
+  @SimpleCommand({
     description: "Obtain recent aircraft weather reports",
+    name: "airep",
   })
   simpleAirep(
-    @SimpleCommandOption("hour-before") hourBefore: number,
+    @SimpleCommandOption({ name: "hour-before" }) hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     this.handler(command.message, hourBefore);
   }
 
-  @Slash("airep", {
+  @Slash({
     description: "Obtain recent aircraft weather reports",
+    name: "airep",
   })
   airep(
-    @SlashOption("hour-before", {
+    @SlashOption({
       description: "Hours between 1 to 72",
+      name: "hour-before",
       required: false,
-      type: "NUMBER",
+      type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
     interaction: CommandInteraction
@@ -74,72 +79,82 @@ export class buttonExample {
 
     const allPages = response.map((report) => {
       // prepare embed
-      const embed = new MessageEmbed();
+      const embed = new EmbedBuilder();
       embed.setTitle(`Report from ${report.aircraft_ref}`);
 
       // raw text
-      embed.addField("Raw Text", report.raw_text ?? "Unavailable");
+      embed.addFields({
+        name: "Raw Text",
+        value: report.raw_text ?? "Unavailable",
+      });
 
       // Observation Time
-      embed.addField(
-        "Observation Time",
-        `${new Date(report.observation_time).toUTCString()}`
-      );
+      embed.addFields({
+        name: "Observation Time",
+        value: `${new Date(report.observation_time).toUTCString()}`,
+      });
 
       // Receipt Time
-      embed.addField(
-        "Receipt Time",
-        `${new Date(report.receipt_time).toUTCString()}`
-      );
+      embed.addFields({
+        name: "Receipt Time",
+        value: `${new Date(report.receipt_time).toUTCString()}`,
+      });
 
       // Wind
       if (report.wind_dir_degrees) {
-        embed.addField(
-          "Wind",
-          `${report.wind_dir_degrees}° ${report.wind_speed_kt}kt` +
-            (report.vert_gust_kt ? ` (gust ${report.vert_gust_kt}kt)` : "")
-        );
+        embed.addFields({
+          name: "Wind",
+          value:
+            `${report.wind_dir_degrees}° ${report.wind_speed_kt}kt` +
+            (report.vert_gust_kt ? ` (gust ${report.vert_gust_kt}kt)` : ""),
+        });
       }
 
       // Altimeter
       if (report.altitude_ft_msl) {
-        embed.addField("Altimeter", `${report.altitude_ft_msl} ft MSL`);
+        embed.addFields({
+          name: "Altimeter",
+          value: `${report.altitude_ft_msl} ft MSL`,
+        });
       }
 
       // Temperature
       if (report.temp_c) {
-        embed.addField(
-          "Temperature",
-          `${report.temp_c}°C (${((report.temp_c * 9) / 5 + 32).toFixed(2)}°F)`
-        );
+        embed.addFields({
+          name: "Temperature",
+          value: `${report.temp_c}°C (${((report.temp_c * 9) / 5 + 32).toFixed(
+            2
+          )}°F)`,
+        });
       }
 
       // Visibility
       if (report.visibility_statute_mi) {
-        embed.addField(
-          "Visibility",
-          `${report.visibility_statute_mi.toFixed(2)} sm (${(
+        embed.addFields({
+          name: "Visibility",
+          value: `${report.visibility_statute_mi.toFixed(2)} sm (${(
             report.visibility_statute_mi * 1.609344
-          ).toFixed(2)} km)`
-        );
+          ).toFixed(2)} km)`,
+        });
       }
 
       // Location
-      embed.addField(
-        "Location",
-        `[Google Map](http://maps.google.com/maps?q=${report.latitude},${report.longitude})` +
-          ` (${report.latitude.toFixed(2)}, ${report.longitude.toFixed(2)})`
-      );
+      embed.addFields({
+        name: "Location",
+        value:
+          `[Google Map](http://maps.google.com/maps?q=${report.latitude},${report.longitude})` +
+          ` (${report.latitude.toFixed(2)}, ${report.longitude.toFixed(2)})`,
+      });
 
       // Source
-      embed.addField(
-        "Source",
-        `[Aviation Weather](${aw.URI.AW({
+      embed.addFields({
+        name: "Source",
+        value: `[Aviation Weather](${aw.URI.AW({
           datasource: "AIRCRAFTREPORTS",
           endTime: report.observation_time,
           startTime: report.observation_time,
-        })})`
-      );
+        })})`,
+      });
 
       // Timestamp
       embed.setTimestamp(new Date(report.observation_time));
@@ -169,6 +184,7 @@ export class buttonExample {
           (report) =>
             `Page {page} - ${new Date(report.observation_time).toUTCString()}`
         );
+
         new Pagination(interaction, allPages, {
           enableExit: true,
           labels: {

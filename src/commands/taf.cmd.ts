@@ -1,10 +1,13 @@
 import { Pagination, PaginationType } from "@discordx/pagination";
 import { Client as AwClient } from "aviationweather";
 import type { CommandInteraction, MessageOptions } from "discord.js";
-import { Message, MessageEmbed } from "discord.js";
+import {
+  ApplicationCommandOptionType,
+  EmbedBuilder,
+  Message,
+} from "discord.js";
 import type { SimpleCommandMessage } from "discordx";
 import {
-  Bot,
   Discord,
   SimpleCommand,
   SimpleCommandOption,
@@ -13,19 +16,19 @@ import {
   SlashOption,
 } from "discordx";
 
-import { searchICAO } from "./utils/common.js";
-import { ErrorMessages, supportRow } from "./utils/static.js";
+import { searchICAO } from "../utils/common.js";
+import { ErrorMessages, supportRow } from "../utils/static.js";
 
 @Discord()
-@Bot("aviationx")
-export class buttonExample {
-  @SimpleCommand("taf", {
+export class Example {
+  @SimpleCommand({
     description: "Obtain taf information for a given CIAO code",
+    name: "taf",
   })
   simpleTaf(
-    @SimpleCommandOption("icao", { type: SimpleCommandOptionType.String })
+    @SimpleCommandOption({ name: "icao", type: SimpleCommandOptionType.String })
     icao: string | undefined,
-    @SimpleCommandOption("hour-before") hourBefore: number,
+    @SimpleCommandOption({ name: "hour-before" }) hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     !icao
@@ -33,20 +36,23 @@ export class buttonExample {
       : this.handler(command.message, icao, hourBefore);
   }
 
-  @Slash("taf", {
+  @Slash({
     description: "Obtain taf information for a given CIAO code",
+    name: "taf",
   })
   taf(
-    @SlashOption("station", {
+    @SlashOption({
       autocomplete: searchICAO,
       description: "Enter ICAO code",
-      type: "STRING",
+      name: "station",
+      type: ApplicationCommandOptionType.String,
     })
     icao: string,
-    @SlashOption("hour-before", {
+    @SlashOption({
       description: "Hours between 1 to 72",
+      name: "hour-before",
       required: false,
-      type: "NUMBER",
+      type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
     interaction: CommandInteraction
@@ -100,70 +106,76 @@ export class buttonExample {
     // if no info found
     if (!response.length) {
       const msg = `Data not available for ${station.site}, ${station.country} (${station.station_id})`;
-      !isMessage ? interaction.followUp(msg) : interaction.reply(msg);
+      !isMessage
+        ? interaction.followUp({ components: [supportRow], content: msg })
+        : interaction.reply({ components: [supportRow], content: msg });
       return;
     }
 
     const allPages = response.map((tafData) => {
       // prepare embed
-      const embed = new MessageEmbed();
+      const embed = new EmbedBuilder();
       embed.setTitle(
         `${station.site}, ${station.country} (${station.station_id})`
       );
 
       // raw text
-      embed.addField("Raw Text", tafData.raw_text);
+      embed.addFields({ name: "Raw Text", value: tafData.raw_text });
 
       // Issue Time
-      embed.addField(
-        "Issue Time",
-        `${new Date(tafData.issue_time).toUTCString()}`
-      );
+      embed.addFields({
+        name: "Issue Time",
+        value: `${new Date(tafData.issue_time).toUTCString()}`,
+      });
 
       // Bulletin Time
-      embed.addField(
-        "Bulletin Time",
-        `${new Date(tafData.bulletin_time).toUTCString()}`
-      );
+      embed.addFields({
+        name: "Bulletin Time",
+        value: `${new Date(tafData.bulletin_time).toUTCString()}`,
+      });
 
       // Valid From Time
-      embed.addField(
-        "Valid From",
-        `${new Date(tafData.valid_time_from).toUTCString()}`
-      );
+      embed.addFields({
+        name: "Valid From",
+        value: `${new Date(tafData.valid_time_from).toUTCString()}`,
+      });
 
       // Valid To Time
-      embed.addField(
-        "Valid To",
-        `${new Date(tafData.valid_time_to).toUTCString()}`
-      );
+      embed.addFields({
+        name: "Valid To",
+        value: `${new Date(tafData.valid_time_to).toUTCString()}`,
+      });
 
       // Remark
       if (tafData.remarks) {
-        embed.addField("Remark", tafData.remarks);
+        embed.addFields({ name: "Remark", value: tafData.remarks });
       }
 
       // Location
-      embed.addField(
-        "Location",
-        `[Google Map](http://maps.google.com/maps?q=${tafData.latitude},${tafData.longitude})` +
-          ` (${tafData.latitude.toFixed(2)}, ${tafData.longitude.toFixed(2)})`
-      );
+      embed.addFields({
+        name: "Location",
+        value:
+          `[Google Map](http://maps.google.com/maps?q=${tafData.latitude},${tafData.longitude})` +
+          ` (${tafData.latitude.toFixed(2)}, ${tafData.longitude.toFixed(2)})`,
+      });
 
       // Type
-      embed.addField("Elevation", `${tafData.elevation_m} meters MSL`);
+      embed.addFields({
+        name: "Elevation",
+        value: `${tafData.elevation_m} meters MSL`,
+      });
 
       // Source
-      embed.addField(
-        "Source",
-        `[Aviation Weather](${aw.URI.AW({
+      embed.addFields({
+        name: "Source",
+        value: `[Aviation Weather](${aw.URI.AW({
           datasource: "TAFS",
           endTime: tafData.issue_time,
           startTime: tafData.issue_time,
           stationString: station.station_id,
           timeType: "issue",
-        })})`
-      );
+        })})`,
+      });
 
       // Timestamp
       embed.setTimestamp(new Date(tafData.issue_time));
@@ -174,39 +186,40 @@ export class buttonExample {
       });
 
       const forecasts = tafData.forecast.map((fr, i) => {
-        const forecastEmbed = new MessageEmbed();
+        const forecastEmbed = new EmbedBuilder();
         forecastEmbed.setTitle(
           `Forecast ${i + 1} - ${station.site} (${station.station_id})`
         );
 
-        forecastEmbed.addField(
-          "From",
+        forecastEmbed.addFields({
+          name: "From",
           /* cspell: disable-next-line */
-          `${new Date(fr.fcst_time_from).toUTCString()}`
-        );
-        forecastEmbed.addField(
-          "To",
+          value: `${new Date(fr.fcst_time_from).toUTCString()}`,
+        });
+        forecastEmbed.addFields({
+          name: "To",
           /* cspell: disable-next-line */
-          `${new Date(fr.fcst_time_to).toUTCString()}`
-        );
+          value: `${new Date(fr.fcst_time_to).toUTCString()}`,
+        });
 
         // Wind
         if (fr.wind_dir_degrees) {
-          forecastEmbed.addField(
-            "Wind",
-            `${fr.wind_dir_degrees}° ${fr.wind_speed_kt}kt` +
-              (fr.wind_gust_kt ? ` (gust ${fr.wind_gust_kt}kt)` : "")
-          );
+          forecastEmbed.addFields({
+            name: "Wind",
+            value:
+              `${fr.wind_dir_degrees}° ${fr.wind_speed_kt}kt` +
+              (fr.wind_gust_kt ? ` (gust ${fr.wind_gust_kt}kt)` : ""),
+          });
         }
 
         // Visibility
         if (fr.visibility_statute_mi) {
-          forecastEmbed.addField(
-            "Visibility",
-            `${fr.visibility_statute_mi.toFixed(2)} sm (${(
+          forecastEmbed.addFields({
+            name: "Visibility",
+            value: `${fr.visibility_statute_mi.toFixed(2)} sm (${(
               fr.visibility_statute_mi * 1.609344
-            ).toFixed(2)} km)`
-          );
+            ).toFixed(2)} km)`,
+          });
         }
 
         // Cloud`
@@ -223,21 +236,27 @@ export class buttonExample {
               );
             })
             .join("\n");
-          forecastEmbed.addField("Cloud", cloudInfo);
+          forecastEmbed.addFields({ name: "Cloud", value: cloudInfo });
         }
 
         if (fr.change_indicator) {
-          forecastEmbed.addField("Change indicator", `${fr.change_indicator}`);
+          forecastEmbed.addFields({
+            name: "Change indicator",
+            value: `${fr.change_indicator}`,
+          });
         }
 
         if (fr.wx_string) {
-          forecastEmbed.addField("Change indicator", `${fr.wx_string}`);
+          forecastEmbed.addFields({
+            name: "Change indicator",
+            value: `${fr.wx_string}`,
+          });
         }
 
         return forecastEmbed;
       });
 
-      const msg: MessageOptions = {
+      const msg: Omit<MessageOptions, "flags"> = {
         embeds: [embed, ...forecasts],
       };
 

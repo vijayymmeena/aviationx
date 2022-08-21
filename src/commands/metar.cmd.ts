@@ -1,10 +1,13 @@
 import { Pagination, PaginationType } from "@discordx/pagination";
 import { Client as AwClient } from "aviationweather";
 import type { CommandInteraction } from "discord.js";
-import { Message, MessageEmbed } from "discord.js";
+import {
+  ApplicationCommandOptionType,
+  EmbedBuilder,
+  Message,
+} from "discord.js";
 import type { SimpleCommandMessage } from "discordx";
 import {
-  Bot,
   Discord,
   SimpleCommand,
   SimpleCommandOption,
@@ -13,20 +16,21 @@ import {
   SlashOption,
 } from "discordx";
 
-import { searchICAO } from "./utils/common.js";
-import { numSpoke } from "./utils/num2word.js";
-import { ErrorMessages, supportRow } from "./utils/static.js";
+import { searchICAO } from "../utils/common.js";
+import { numSpoke } from "../utils/num2word.js";
+import { ErrorMessages, supportRow } from "../utils/static.js";
 
 @Discord()
-@Bot("aviationx")
-export class buttonExample {
-  @SimpleCommand("metar", {
+export class Example {
+  @SimpleCommand({
+    aliases: ["m"],
     description: "Obtain metar information for a given CIAO code",
+    name: "metar",
   })
   simpleMetar(
-    @SimpleCommandOption("icao", { type: SimpleCommandOptionType.String })
+    @SimpleCommandOption({ name: "icao", type: SimpleCommandOptionType.String })
     icao: string | undefined,
-    @SimpleCommandOption("hour-before") hourBefore: number,
+    @SimpleCommandOption({ name: "hour-before" }) hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     !icao
@@ -34,20 +38,23 @@ export class buttonExample {
       : this.handler(command.message, icao, hourBefore);
   }
 
-  @Slash("metar", {
+  @Slash({
     description: "Obtain metar information for a given CIAO code",
+    name: "metar",
   })
   metar(
-    @SlashOption("station", {
+    @SlashOption({
       autocomplete: searchICAO,
       description: "Enter ICAO code",
-      type: "STRING",
+      name: "station",
+      type: ApplicationCommandOptionType.String,
     })
     icao: string,
-    @SlashOption("hour-before", {
+    @SlashOption({
       description: "Hours between 1 to 72",
+      name: "hour-before",
       required: false,
-      type: "NUMBER",
+      type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
     interaction: CommandInteraction
@@ -101,19 +108,21 @@ export class buttonExample {
     // if no info found
     if (!response.length) {
       const msg = `Data not available for ${station.site}, ${station.country} (${station.station_id})`;
-      !isMessage ? interaction.followUp(msg) : interaction.reply(msg);
+      !isMessage
+        ? interaction.followUp({ components: [supportRow], content: msg })
+        : interaction.reply({ components: [supportRow], content: msg });
       return;
     }
 
     const allPages = response.map((metarData) => {
       // prepare embed
-      const embed = new MessageEmbed();
+      const embed = new EmbedBuilder();
       embed.setTitle(
         `${station.site}, ${station.country} (${station.station_id})`
       );
 
       // raw text
-      embed.addField("Raw Text", metarData.raw_text);
+      embed.addFields({ name: "Raw Text", value: metarData.raw_text });
       const spoken: string[] = [];
       if (metarData.wind_dir_degrees) {
         spoken.push(
@@ -150,7 +159,7 @@ export class buttonExample {
         /* cspell: disable-next-line */
         spoken.push(`Dewpoint ${numSpoke(metarData.temp_c)} degree celsius.`);
       }
-      embed.addField("Spoken", spoken.join(" "));
+      embed.addFields({ name: "Spoken", value: spoken.join(" ") });
 
       // Cloud
       if (metarData.sky_condition.length) {
@@ -166,33 +175,39 @@ export class buttonExample {
             );
           })
           .join("\n");
-        embed.addField("Cloud", cloudInfo);
+
+        embed.addFields({ name: "Cloud", value: cloudInfo });
       }
 
       // Wind
       if (metarData.wind_dir_degrees) {
-        embed.addField(
-          "Wind",
-          `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt` +
+        embed.addFields({
+          name: "Wind",
+          value:
+            `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt` +
             (metarData.wind_gust_kt
               ? ` (gust ${metarData.wind_gust_kt}kt)`
-              : "")
-        );
+              : ""),
+        });
       }
 
       // Altimeter
-      embed.addField(
-        "Altimeter",
+      embed.addFields({
+        name: "Altimeter",
         /* cspell: disable-next-line */
-        `${(metarData.altim_in_hg * 33.863886666667).toFixed(2)} hPa` +
+        value:
+          `${(metarData.altim_in_hg * 33.863886666667).toFixed(2)} hPa` +
           /* cspell: disable-next-line */
-          ` (${metarData.altim_in_hg.toFixed(2)} inHg)`
-      );
+          ` (${metarData.altim_in_hg.toFixed(2)} inHg)`,
+      });
 
       // Temperature
-      embed.addField(
-        "Temperature",
-        `${metarData.temp_c}°C (${((metarData.temp_c * 9) / 5 + 32).toFixed(
+      embed.addFields({
+        name: "Temperature",
+        value: `${metarData.temp_c}°C (${(
+          (metarData.temp_c * 9) / 5 +
+          32
+        ).toFixed(
           2
           /* cspell: disable-next-line */
         )}°F) - Dewpoint: ${
@@ -201,46 +216,53 @@ export class buttonExample {
         }°C (${
           /* cspell: disable-next-line */
           ((metarData.dewpoint_c * 9) / 5 + 32).toFixed(2)
-        }°F)`
-      );
+        }°F)`,
+      });
 
       // Flight Rule
       if (metarData.flight_category) {
-        embed.addField("Flight Rule", metarData.flight_category);
+        embed.addFields({
+          name: "Flight Rule",
+          value: metarData.flight_category,
+        });
       }
 
       // Visibility
       if (metarData.visibility_statute_mi) {
-        embed.addField(
-          "Visibility",
-          `${metarData.visibility_statute_mi.toFixed(2)} sm (${(
+        embed.addFields({
+          name: "Visibility",
+          value: `${metarData.visibility_statute_mi.toFixed(2)} sm (${(
             metarData.visibility_statute_mi * 1.609344
-          ).toFixed(2)} km)`
-        );
+          ).toFixed(2)} km)`,
+        });
       }
 
       // Location
-      embed.addField(
-        "Location",
-        `[Google Map](http://maps.google.com/maps?q=${metarData.latitude},${metarData.longitude})` +
+      embed.addFields({
+        name: "Location",
+        value:
+          `[Google Map](http://maps.google.com/maps?q=${metarData.latitude},${metarData.longitude})` +
           ` (${metarData.latitude.toFixed(2)}, ${metarData.longitude.toFixed(
             2
-          )})`
-      );
+          )})`,
+      });
 
       // Type
-      embed.addField("Elevation", `${metarData.elevation_m} meters MSL`);
+      embed.addFields({
+        name: "Elevation",
+        value: `${metarData.elevation_m} meters MSL`,
+      });
 
       // Source
-      embed.addField(
-        "Source",
-        `[Aviation Weather](${aw.URI.AW({
+      embed.addFields({
+        name: "Source",
+        value: `[Aviation Weather](${aw.URI.AW({
           datasource: "METARS",
           endTime: metarData.observation_time,
           startTime: metarData.observation_time,
           stationString: station.station_id,
-        })})`
-      );
+        })})`,
+      });
 
       // Timestamp
       embed.setTimestamp(new Date(metarData.observation_time));

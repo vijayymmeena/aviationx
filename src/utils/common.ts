@@ -6,10 +6,10 @@ export async function searchICAO(
 ): Promise<void> {
   const text = String(command.options.getFocused());
   const response = await axios
-    .get<{ data?: string[]; success: boolean }>(
+    .get<string[]>(
       `https://aircharterguide-api.tuvoli.com/api/v1/airport/all?searchText=${text}`
     )
-    .then((res) => res.data?.data ?? null)
+    .then((res) => res.data)
     .catch(() => null);
 
   if (!response) {

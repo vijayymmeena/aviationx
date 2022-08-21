@@ -1,48 +1,81 @@
 import "reflect-metadata";
-import "dotenv/config";
-import { Intents, Interaction, Message } from "discord.js";
+
 import { dirname, importx } from "@discordx/importer";
+import type { Interaction, Message } from "discord.js";
+import { IntentsBitField, Partials } from "discord.js";
 import { Client } from "discordx";
 
-const client = new Client({
-  botId: "aviationx",
+export const bot = new Client({
+  // To only use global commands (use @Guild for specific guild command), comment this line
+  // botGuilds: [(client) => client.guilds.cache.map((guild) => guild.id)],
+
+  // Discord intents
   intents: [
-    Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MESSAGES,
-    Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-    Intents.FLAGS.GUILD_VOICE_STATES,
+    IntentsBitField.Flags.Guilds,
+    IntentsBitField.Flags.GuildMessages,
+    IntentsBitField.Flags.GuildMessageReactions,
   ],
+
+  // Partials
+  partials: [
+    Partials.GuildMember,
+    Partials.Channel,
+    Partials.Message,
+    Partials.Reaction,
+    Partials.User,
+  ],
+
+  // Debug logs are disabled in silent mode
+  silent: false,
+
+  // Configuration for @SimpleCommand
   simpleCommand: {
     prefix: "!",
   },
 });
 
-client.on("ready", async () => {
-  client.user?.setActivity("aviation weather");
-  await client.initApplicationCommands({
-    guild: { log: true },
-    global: { log: true },
-  });
-  await client.initApplicationPermissions();
-});
+bot.once("ready", async () => {
+  // Make sure all guilds are cached
+  await bot.guilds.fetch();
 
-client.on("interactionCreate", (interaction: Interaction) => {
-  if (interaction.isButton() || interaction.isSelectMenu()) {
-    if (interaction.customId.startsWith("discordx@pagination@")) return;
+  // Synchronize applications commands with Discord
+  await bot.initApplicationCommands();
+
+  // To clear all guild commands, uncomment this line,
+  // This is useful when moving from guild commands to global commands
+  // It must only be executed once
+  //
+  //  await bot.clearApplicationCommands(
+  //    ...bot.guilds.cache.map((g) => g.id)
+  //  );
+
+  console.log("Bot started");
+
+  // set bot activity
+  if (bot.user) {
+    bot.user.setActivity("aviation weather");
   }
-  client.executeInteraction(interaction);
 });
 
-client.on("messageCreate", (message: Message) => {
-  client.executeCommand(message);
+bot.on("interactionCreate", (interaction: Interaction) => {
+  bot.executeInteraction(interaction);
 });
 
-importx(dirname(import.meta.url) + "/{events,commands}/**/*.{ts,js}").then(
-  () => {
-    if (!process.env.BOT_TOKEN) {
-      throw Error("BOT_TOKEN not found in your environment!");
-    }
+bot.on("messageCreate", (message: Message) => {
+  bot.executeCommand(message);
+});
 
-    client.login(process.env.BOT_TOKEN);
+async function run() {
+  // Import commands/events
+  await importx(dirname(import.meta.url) + "/{events,commands}/**/*.{ts,js}");
+
+  // Let's start the bot
+  if (!process.env.BOT_TOKEN) {
+    throw Error("Could not find BOT_TOKEN in your environment");
   }
-);
+
+  // Log in with your bot token
+  await bot.login(process.env.BOT_TOKEN);
+}
+
+run();
