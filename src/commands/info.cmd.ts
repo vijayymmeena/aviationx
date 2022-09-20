@@ -15,7 +15,7 @@ export class Command {
     return retNum;
   }
 
-  @Slash()
+  @Slash({ description: "Information about bot" })
   async info(interaction: CommandInteraction): Promise<void> {
     if (!interaction.client.user || !interaction.guild) {
       return;

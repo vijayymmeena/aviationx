@@ -41,6 +41,7 @@ export class Example {
       autocomplete: searchICAO,
       description: "Enter ICAO code",
       name: "station",
+      required: true,
       type: ApplicationCommandOptionType.String,
     })
     icao: string,

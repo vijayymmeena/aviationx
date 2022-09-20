@@ -11,6 +11,7 @@ import {
   Discord,
   SimpleCommand,
   SimpleCommandOption,
+  SimpleCommandOptionType,
   Slash,
   SlashOption,
 } from "discordx";
@@ -25,7 +26,12 @@ export class Example {
     name: "airmet",
   })
   simpleAirmet(
-    @SimpleCommandOption({ name: "hour-before" }) hourBefore: number,
+    @SimpleCommandOption({
+      description: "Obtain all aircraft reports collected in the last hour",
+      name: "hour-before",
+      type: SimpleCommandOptionType.Number,
+    })
+    hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     this.handler(command.message, hourBefore);
@@ -37,7 +43,9 @@ export class Example {
   })
   airmet(
     @SlashOption({
-      description: "Hours between 1 to 72",
+      description: "Obtain all aircraft reports collected in the last hour",
+      maxValue: 72,
+      minValue: 1,
       name: "hour-before",
       required: false,
       type: ApplicationCommandOptionType.Number,

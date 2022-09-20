@@ -28,7 +28,12 @@ export class Example {
   simpleTaf(
     @SimpleCommandOption({ name: "icao", type: SimpleCommandOptionType.String })
     icao: string | undefined,
-    @SimpleCommandOption({ name: "hour-before" }) hourBefore: number,
+    @SimpleCommandOption({
+      description: "Obtain all aircraft reports collected in the last hour",
+      name: "hour-before",
+      type: SimpleCommandOptionType.Number,
+    })
+    hourBefore: number,
     command: SimpleCommandMessage
   ): void {
     !icao
@@ -45,11 +50,14 @@ export class Example {
       autocomplete: searchICAO,
       description: "Enter ICAO code",
       name: "station",
+      required: true,
       type: ApplicationCommandOptionType.String,
     })
     icao: string,
     @SlashOption({
-      description: "Hours between 1 to 72",
+      description: "Obtain all aircraft reports collected in the last hour",
+      maxValue: 72,
+      minValue: 1,
       name: "hour-before",
       required: false,
       type: ApplicationCommandOptionType.Number,
