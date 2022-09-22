@@ -153,24 +153,32 @@ export class Example {
       return;
     } else {
       if (allPages.length < 6) {
-        new Pagination(interaction, allPages, {
-          enableExit: true,
-          type: PaginationType.Button,
-        }).send();
+        new Pagination(
+          interaction,
+          allPages.map((embed) => ({ embeds: [embed] })),
+          {
+            enableExit: true,
+            type: PaginationType.Button,
+          }
+        ).send();
       } else {
         // all pages text with observation time
         const menuOptions = response.map(
           (report) =>
             `Page {page} - ${new Date(report.valid_time_from).toUTCString()}`
         );
-        new Pagination(interaction, allPages, {
-          enableExit: true,
-          labels: {
-            end: `End - ${allPages.length}`,
-          },
-          pageText: menuOptions,
-          type: PaginationType.SelectMenu,
-        }).send();
+        new Pagination(
+          interaction,
+          allPages.map((embed) => ({ embeds: [embed] })),
+          {
+            enableExit: true,
+            labels: {
+              end: `End - ${allPages.length}`,
+            },
+            pageText: menuOptions,
+            type: PaginationType.SelectMenu,
+          }
+        ).send();
       }
     }
   }

@@ -1,6 +1,6 @@
 import { Pagination, PaginationType } from "@discordx/pagination";
 import { Client as AwClient } from "aviationweather";
-import type { CommandInteraction, MessageOptions } from "discord.js";
+import type { BaseMessageOptions, CommandInteraction } from "discord.js";
 import {
   ApplicationCommandOptionType,
   EmbedBuilder,
@@ -264,7 +264,7 @@ export class Example {
         return forecastEmbed;
       });
 
-      const msg: Omit<MessageOptions, "flags"> = {
+      const msg: BaseMessageOptions = {
         embeds: [embed, ...forecasts],
       };
 

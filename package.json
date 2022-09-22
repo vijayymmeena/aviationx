@@ -18,10 +18,10 @@
   },
   "dependencies": {
     "@discordx/importer": "^1.1.10",
-    "@discordx/pagination": "^3.0.0",
+    "@discordx/pagination": "^3.2.0",
     "aviationweather": "^2.1.0",
     "axios": "^0.27.2",
-    "discord.js": "^14.3.0",
+    "discord.js": "^14.4.0",
     "discordx": "^11.3.0",
     "reflect-metadata": "^0.1.13"
   },
