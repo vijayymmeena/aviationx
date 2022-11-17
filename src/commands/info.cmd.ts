@@ -26,7 +26,7 @@ export class Command {
     embed.setAuthor({
       iconURL: interaction.client.user.displayAvatarURL(),
       name: interaction.client.user.username,
-      url: "https://github.com/oceanroleplay/aviationx",
+      url: "https://github.com/samarmeena/aviationx",
     });
 
     embed.setColor(randomInt(50000));

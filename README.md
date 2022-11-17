@@ -21,4 +21,4 @@ A aviation weather bot for discord.
 
 ## Help or support
 
-Join [discord server](https://discord.gg/xkP9paz5X3)
+Join [discord server](https://discordx.js.org/discord)

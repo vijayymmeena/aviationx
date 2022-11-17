@@ -1,8 +1,6 @@
-import "reflect-metadata";
-
 import { dirname, importx } from "@discordx/importer";
 import type { Interaction, Message } from "discord.js";
-import { IntentsBitField, Partials } from "discord.js";
+import { ActivityType, IntentsBitField, Partials } from "discord.js";
 import { Client } from "discordx";
 
 export const bot = new Client({
@@ -14,6 +12,7 @@ export const bot = new Client({
     IntentsBitField.Flags.Guilds,
     IntentsBitField.Flags.GuildMessages,
     IntentsBitField.Flags.GuildMessageReactions,
+    IntentsBitField.Flags.MessageContent,
   ],
 
   // Partials
@@ -52,9 +51,14 @@ bot.once("ready", async () => {
   console.log("Bot started");
 
   // set bot activity
-  if (bot.user) {
-    bot.user.setActivity("aviation weather");
-  }
+  setInterval(() => {
+    console.log(`${bot.guilds.cache.size} guilds...`);
+    if (bot.user) {
+      bot.user.setActivity("aviation weather | /metar", {
+        type: ActivityType.Watching,
+      });
+    }
+  }, 60 * 1000);
 });
 
 bot.on("interactionCreate", (interaction: Interaction) => {

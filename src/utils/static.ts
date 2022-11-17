@@ -9,13 +9,13 @@ export enum ErrorMessages {
 const githubButton = new ButtonBuilder({
   label: "🚀 GitHub",
   style: ButtonStyle.Link,
-  url: "https://github.com/oceanroleplay/aviationx",
+  url: "https://github.com/samarmeena/aviationx",
 });
 
 const discordButton = new ButtonBuilder({
   label: "🍻 Support Server",
   style: ButtonStyle.Link,
-  url: "https://discord.gg/xkP9paz5X3",
+  url: "https://discordx.js.org/discord",
 });
 
 const addToServerButton = new ButtonBuilder({
