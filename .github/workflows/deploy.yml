@@ -8,16 +8,24 @@ on:
     types:
       - completed
 
+env:
+  IMAGE_NAME: bot/aviationx
+  KUBE_CONTAINER_NAME: aviationx
+  KUBE_DEPLOYMENT_NAME: aviationx
+  KUBE_NAMESPACE: discord
+
 jobs:
-  deploy:
-    name: Deploy
+  build:
+    name: Build
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      tag: ${{ steps.tag.outputs.name }}
     steps:
-      - name: Check out code 🛎
-        uses: actions/checkout@v2
+      - name: check out code 🛎
+        uses: actions/checkout@v3
 
-      - name: Check out buildx
+      - name: check out buildx
         uses: docker/setup-buildx-action@v2
         id: buildx
         with:
@@ -25,7 +33,7 @@ jobs:
 
       - name: Prepare Tag
         id: tag
-        run: echo "::set-output name=name::bot/aviationx:`date +"%y.%m.%d.%H.%M"`"
+        run: echo "name=${{ env.IMAGE_NAME }}:`date +"%y.%m.%d.%H.%M"`" >> $GITHUB_OUTPUT
 
       - name: Login to Container Registry
         uses: docker/login-action@v2
@@ -40,31 +48,49 @@ jobs:
           push: true
           tags: ${{ secrets.REGISTRY_HOST }}/${{ steps.tag.outputs.name }}
 
-      - name: Deploy
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
         run: |
-          echo "${{ secrets.SSH_KEY }}" | tr -d '\r' > key.pem
-          chmod 400 key.pem
-          ssh -oStrictHostKeyChecking=no -i key.pem $SSH_HOST $SCRIPT_PATH ${{ steps.tag.outputs.name }} &> /dev/null
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/staging.key
+          chmod 600 ~/.ssh/staging.key
+          cat >>~/.ssh/config <<END
+          Host staging
+            HostName $SSH_HOST
+            Port ${SSH_PORT:-22}
+            User $SSH_USER
+            IdentityFile ~/.ssh/staging.key
+            StrictHostKeyChecking no
+          END
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SCRIPT_PATH: ${{ secrets.SCRIPT_PATH }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+
+      - name: Set deployment image
+        run: ssh staging 'microk8s kubectl set image deployments/${{ env.KUBE_DEPLOYMENT_NAME }} ${{ env.KUBE_CONTAINER_NAME }}=localhost:32000/${{ needs.build.outputs.tag }} -n ${{ env.KUBE_NAMESPACE }}'
 
   alert:
     name: Alert
     if: ${{ always() }}
-    needs: deploy
+    needs: [build, deploy]
     runs-on: ubuntu-latest
     steps:
       - name: Successful
-        if: ${{ needs.deploy.result == 'success' }}
+        if: ${{ needs.build.result == 'success' && needs.deploy.result == 'success' }}
         run: |
-          curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{\"content\": \"\`bot_aviationx\` [deployed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) successfully :tada:\"}" $DISCORD_WEBHOOK &> /dev/null
+          curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{\"content\": \"\`${{ secrets.REGISTRY_HOST }}/${{ needs.build.outputs.tag }}\` [deployed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) successfully :tada:\"}" $DISCORD_WEBHOOK &> /dev/null
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
       - name: Failed
-        if: ${{ needs.deploy.result != 'success' }}
+        if: ${{ needs.build.result != 'success' || needs.deploy.result != 'success' }}
         run: |
-          curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{\"content\": \"\`bot_aviationx\` [deployment](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) failed :x:\"}" $DISCORD_WEBHOOK &> /dev/null
+          curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{\"content\": \"\`${{ secrets.REGISTRY_HOST }}/${{ needs.build.outputs.tag }}\` [deployment](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) failed :x:\"}" $DISCORD_WEBHOOK &> /dev/null
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
