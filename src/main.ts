@@ -52,7 +52,6 @@ bot.once("ready", async () => {
 
   // set bot activity
   setInterval(() => {
-    console.log(`${bot.guilds.cache.size} guilds...`);
     if (bot.user) {
       bot.user.setActivity("aviation weather | /metar", {
         type: ActivityType.Watching,

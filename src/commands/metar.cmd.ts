@@ -36,7 +36,7 @@ export class Example {
       type: SimpleCommandOptionType.Number,
     })
     hourBefore: number,
-    command: SimpleCommandMessage
+    command: SimpleCommandMessage,
   ): void {
     !icao
       ? command.sendUsageSyntax()
@@ -65,7 +65,7 @@ export class Example {
       type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ): void {
     this.handler(interaction, icao, hourBefore);
   }
@@ -73,7 +73,7 @@ export class Example {
   async handler(
     interaction: CommandInteraction | Message,
     icao: string,
-    hourBefore: number
+    hourBefore: number,
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
@@ -126,7 +126,7 @@ export class Example {
       // prepare embed
       const embed = new EmbedBuilder();
       embed.setTitle(
-        `${station.site}, ${station.country} (${station.station_id})`
+        `${station.site}, ${station.country} (${station.station_id})`,
       );
 
       // raw text
@@ -136,14 +136,14 @@ export class Example {
         spoken.push(
           `Winds ${numSpoke(metarData.wind_dir_degrees)} at ${
             metarData.wind_speed_kt
-          }kt.`
+          }kt.`,
         );
       }
       if (metarData.visibility_statute_mi) {
         spoken.push(
           `Visibility ${numSpoke(
-            Number((metarData.visibility_statute_mi * 1.609344).toFixed(2))
-          )} kilometers.`
+            Number((metarData.visibility_statute_mi * 1.609344).toFixed(2)),
+          )} kilometers.`,
         );
       }
       /* cspell: disable-next-line */
@@ -151,14 +151,14 @@ export class Example {
         spoken.push(
           `Altimeter ${numSpoke(
             /* cspell: disable-next-line */
-            Number((metarData.altim_in_hg * 33.863886666667).toFixed(2))
-          )} hPa.`
+            Number((metarData.altim_in_hg * 33.863886666667).toFixed(2)),
+          )} hPa.`,
         );
       }
 
       if (metarData.temp_c) {
         spoken.push(
-          `Temperature ${numSpoke(metarData.temp_c)} degree celsius.`
+          `Temperature ${numSpoke(metarData.temp_c)} degree celsius.`,
         );
       }
 
@@ -216,7 +216,7 @@ export class Example {
           (metarData.temp_c * 9) / 5 +
           32
         ).toFixed(
-          2
+          2,
           /* cspell: disable-next-line */
         )}°F) - Dewpoint: ${
           /* cspell: disable-next-line */
@@ -251,7 +251,7 @@ export class Example {
         value:
           `[Google Map](http://maps.google.com/maps?q=${metarData.latitude},${metarData.longitude})` +
           ` (${metarData.latitude.toFixed(2)}, ${metarData.longitude.toFixed(
-            2
+            2,
           )})`,
       });
 
@@ -296,15 +296,15 @@ export class Example {
           {
             enableExit: true,
             type: PaginationType.Button,
-          }
+          },
         ).send();
       } else {
         // all pages text with observation time .
         const menuOptions = response.map(
           (metarData) =>
             `Page {page} - ${new Date(
-              metarData.observation_time
-            ).toUTCString()}`
+              metarData.observation_time,
+            ).toUTCString()}`,
         );
         new Pagination(
           interaction,
@@ -316,7 +316,7 @@ export class Example {
             },
             pageText: menuOptions,
             type: PaginationType.SelectMenu,
-          }
+          },
         ).send();
       }
     }

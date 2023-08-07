@@ -32,7 +32,7 @@ export class Example {
       type: SimpleCommandOptionType.Number,
     })
     hourBefore: number,
-    command: SimpleCommandMessage
+    command: SimpleCommandMessage,
   ): void {
     this.handler(command.message, hourBefore);
   }
@@ -51,14 +51,14 @@ export class Example {
       type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ): void {
     this.handler(interaction, hourBefore);
   }
 
   async handler(
     interaction: CommandInteraction | Message,
-    hourBefore: number
+    hourBefore: number,
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
@@ -159,13 +159,13 @@ export class Example {
           {
             enableExit: true,
             type: PaginationType.Button,
-          }
+          },
         ).send();
       } else {
         // all pages text with observation time
         const menuOptions = response.map(
           (report) =>
-            `Page {page} - ${new Date(report.valid_time_from).toUTCString()}`
+            `Page {page} - ${new Date(report.valid_time_from).toUTCString()}`,
         );
         new Pagination(
           interaction,
@@ -177,7 +177,7 @@ export class Example {
             },
             pageText: menuOptions,
             type: PaginationType.SelectMenu,
-          }
+          },
         ).send();
       }
     }

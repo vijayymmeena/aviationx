@@ -34,7 +34,7 @@ export class Example {
       type: SimpleCommandOptionType.Number,
     })
     hourBefore: number,
-    command: SimpleCommandMessage
+    command: SimpleCommandMessage,
   ): void {
     !icao
       ? command.sendUsageSyntax()
@@ -63,7 +63,7 @@ export class Example {
       type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ): void {
     this.handler(interaction, icao, hourBefore);
   }
@@ -71,7 +71,7 @@ export class Example {
   async handler(
     interaction: CommandInteraction | Message,
     icao: string,
-    hourBefore: number
+    hourBefore: number,
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
@@ -124,7 +124,7 @@ export class Example {
       // prepare embed
       const embed = new EmbedBuilder();
       embed.setTitle(
-        `${station.site}, ${station.country} (${station.station_id})`
+        `${station.site}, ${station.country} (${station.station_id})`,
       );
 
       // raw text
@@ -196,7 +196,7 @@ export class Example {
       const forecasts = tafData.forecast.map((fr, i) => {
         const forecastEmbed = new EmbedBuilder();
         forecastEmbed.setTitle(
-          `Forecast ${i + 1} - ${station.site} (${station.station_id})`
+          `Forecast ${i + 1} - ${station.site} (${station.station_id})`,
         );
 
         forecastEmbed.addFields({
@@ -286,7 +286,7 @@ export class Example {
         // all pages text with observation time
         const menuOptions = response.map(
           (metarData) =>
-            `Page {page} - ${new Date(metarData.issue_time).toUTCString()}`
+            `Page {page} - ${new Date(metarData.issue_time).toUTCString()}`,
         );
         new Pagination(interaction, allPages, {
           enableExit: true,

@@ -2,12 +2,12 @@ import axios from "axios";
 import type { AutocompleteInteraction } from "discord.js";
 
 export async function searchICAO(
-  command: AutocompleteInteraction
+  command: AutocompleteInteraction,
 ): Promise<void> {
   const text = String(command.options.getFocused());
   const response = await axios
     .get<string[]>(
-      `https://aircharterguide-api.tuvoli.com/api/v1/airport/all?searchText=${text}`
+      `https://aircharterguide-api.tuvoli.com/api/v1/airport/all?searchText=${text}`,
     )
     .then((res) => res.data)
     .catch(() => null);
@@ -24,7 +24,7 @@ export async function searchICAO(
       list.map((item) => ({
         name: item,
         value: /^\[(.*?)\]/.exec(item)?.[1] ?? text,
-      }))
+      })),
     )
     .catch(() => null);
 }

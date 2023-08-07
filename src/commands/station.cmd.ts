@@ -27,7 +27,7 @@ export class Example {
   simpleMetar(
     @SimpleCommandOption({ name: "icao", type: SimpleCommandOptionType.String })
     icao: string | undefined,
-    command: SimpleCommandMessage
+    command: SimpleCommandMessage,
   ): void {
     !icao ? command.sendUsageSyntax() : this.handler(command.message, icao);
   }
@@ -45,14 +45,14 @@ export class Example {
       type: ApplicationCommandOptionType.String,
     })
     icao: string,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ): void {
     this.handler(interaction, icao);
   }
 
   async handler(
     interaction: CommandInteraction | Message,
-    icao: string
+    icao: string,
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
@@ -80,7 +80,7 @@ export class Example {
 
     const embed = new EmbedBuilder();
     embed.setTitle(
-      `${station.site}, ${station.country} (${station.station_id})`
+      `${station.site}, ${station.country} (${station.station_id})`,
     );
 
     // wmo_id

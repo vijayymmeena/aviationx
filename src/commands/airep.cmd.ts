@@ -31,7 +31,7 @@ export class Example {
       type: SimpleCommandOptionType.Number,
     })
     hourBefore: number,
-    command: SimpleCommandMessage
+    command: SimpleCommandMessage,
   ): void {
     this.handler(command.message, hourBefore);
   }
@@ -50,14 +50,14 @@ export class Example {
       type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ): void {
     this.handler(interaction, hourBefore);
   }
 
   async handler(
     interaction: Message | CommandInteraction,
-    hourBefore: number
+    hourBefore: number,
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
@@ -131,7 +131,7 @@ export class Example {
         embed.addFields({
           name: "Temperature",
           value: `${report.temp_c}°C (${((report.temp_c * 9) / 5 + 32).toFixed(
-            2
+            2,
           )}°F)`,
         });
       }
@@ -188,13 +188,13 @@ export class Example {
           {
             enableExit: true,
             type: PaginationType.Button,
-          }
+          },
         ).send();
       } else {
         // all pages text with observation time
         const menuOptions = response.map(
           (report) =>
-            `Page {page} - ${new Date(report.observation_time).toUTCString()}`
+            `Page {page} - ${new Date(report.observation_time).toUTCString()}`,
         );
 
         new Pagination(
@@ -207,7 +207,7 @@ export class Example {
             },
             pageText: menuOptions,
             type: PaginationType.SelectMenu,
-          }
+          },
         ).send();
       }
     }
