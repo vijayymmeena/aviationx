@@ -20,7 +20,7 @@ export function searchICAO(command: AutocompleteInteraction): void {
       list.map(({ item }) => ({
         name: `${item.site} (${item.icaoId})`,
         value: item.icaoId,
-      }))
+      })),
     )
     .catch(() => null);
 }
