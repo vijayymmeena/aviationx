@@ -32,9 +32,14 @@ export class Command {
     embed.setColor(randomInt(50000));
     embed.setTimestamp();
     embed.addFields({
-      inline: true,
       name: "Guild Name",
       value: interaction.guild.name,
+    });
+
+    embed.addFields({
+      inline: true,
+      name: "Guild Id",
+      value: interaction.guild.id,
     });
 
     embed.addFields({
@@ -45,8 +50,8 @@ export class Command {
 
     embed.addFields({
       inline: true,
-      name: "Guild Id",
-      value: interaction.guild.id,
+      name: "Developer",
+      value: "[Samar](https://github.com/samarmeena)",
     });
 
     embed.addFields({
@@ -61,23 +66,13 @@ export class Command {
       value: `${this.totalMembers(interaction.client)}`,
     });
 
-    embed.addFields({ inline: true, name: "\u200f", value: "\u200f" });
-    embed.addFields({
-      inline: true,
-      name: "Developer",
-      value: "Harry#5791",
-    });
+    // embed.addFields({ inline: true, name: "\u200f", value: "\u200f" });
 
     embed.addFields({
       inline: true,
       name: "Framework",
-      value: "[discordx](https://www.npmjs.com/package/discordx)",
-    });
-
-    embed.addFields({
-      inline: true,
-      name: "Library",
-      value: "[aviationweather](https://www.npmjs.com/package/aviationweather)",
+      value:
+        "[discordx](https://www.npmjs.com/package/discordx), [aviationweather](https://www.npmjs.com/package/aviationweather)",
     });
 
     await interaction.reply({ components: [supportRow], embeds: [embed] });

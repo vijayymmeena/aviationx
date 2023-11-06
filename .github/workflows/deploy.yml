@@ -20,7 +20,7 @@ jobs:
       image_uri: ${{ steps.tag.outputs.current }}
     steps:
       - name: check out code 🛎
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: check out buildx
         uses: docker/setup-buildx-action@v2

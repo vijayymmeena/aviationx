@@ -1,6 +1,14 @@
-import { Pagination, PaginationType } from "@discordx/pagination";
-import { Client as AwClient } from "aviationweather";
-import type { CommandInteraction } from "discord.js";
+import type { Resolver } from "@discordx/pagination";
+import { Pagination } from "@discordx/pagination";
+import type { MetarResponse, Station } from "aviationweather";
+import { getMetar } from "aviationweather";
+import dayjs from "dayjs";
+import type {
+  CommandInteraction,
+  InteractionReplyOptions,
+  MessagePayload,
+  MessageReplyOptions,
+} from "discord.js";
 import {
   ApplicationCommandOptionType,
   EmbedBuilder,
@@ -16,9 +24,128 @@ import {
   SlashOption,
 } from "discordx";
 
-import { searchICAO } from "../utils/common.js";
-import { numSpoke } from "../utils/num2word.js";
 import { ErrorMessages, supportRow } from "../utils/static.js";
+import { getICAO, searchICAO } from "../utils/stations.js";
+import { convertVisibilityInput } from "../utils/visibility.js";
+import { degreesToDirection, getSky } from "../utils/wind.js";
+
+function GetMetarEmbed(station: Station, metar: MetarResponse) {
+  console.log(metar, metar.clouds);
+
+  // prepare embed
+  const embed = new EmbedBuilder();
+
+  // set title
+  embed.setTitle(`${station.site}, ${station.country} (${station.icaoId})`);
+
+  // raw text
+  embed.addFields({ name: "Raw Text", value: metar.rawOb });
+
+  // clouds
+  if (metar.clouds.length > 0) {
+    console.log(getSky(metar.clouds[0]?.cover ?? ""));
+    const cloudInfo = metar.clouds
+      .map((info) => {
+        return (
+          `${getSky(info.cover)} (${info.cover})` +
+          (info.base ? ` at ${info.base} ft AGL` : "")
+        );
+      })
+      .join("\n");
+
+    embed.addFields({
+      name: "Clouds",
+      value: cloudInfo,
+    });
+  }
+
+  // winds
+  if (metar.wdir && metar.wspd) {
+    embed.addFields({
+      name: "Winds",
+      value: `from the ${degreesToDirection(metar.wdir)} (${
+        metar.wdir
+      } degrees) at ${Math.round(metar.wspd * 1.15078)} MPH (${
+        metar.wspd
+      } knots)`,
+    });
+  }
+
+  // Altimeter
+  if (metar.altim) {
+    embed.addFields({
+      name: "Pressure (Altimeter)",
+      /* cspell: disable-next-line */
+      value:
+        `${(metar.altim / 33.863886666667).toFixed(2)} inches Hg` +
+        /* cspell: disable-next-line */
+        ` (${metar.altim.toFixed(2)} mb) [Sea level pressure: ${
+          metar.slp ?? "-"
+        } mb]`,
+    });
+  }
+
+  // Temperature
+  if (metar.temp && metar.dewp) {
+    embed.addFields({
+      name: "Temperature",
+      value: `${metar.temp}°C (${((metar.temp * 9) / 5 + 32).toFixed(
+        2
+        /* cspell: disable-next-line */
+      )}°F) - Dewpoint: ${
+        /* cspell: disable-next-line */
+        metar.dewp
+      }°C (${
+        /* cspell: disable-next-line */
+        ((metar.dewp * 9) / 5 + 32).toFixed(2)
+      }°F)`,
+    });
+  }
+
+  // Visibility
+  if (metar.visib) {
+    embed.addFields({
+      name: "Visibility",
+      value: `${convertVisibilityInput(String(metar.visib))}`,
+    });
+  }
+
+  // Type
+  embed.addFields({
+    name: "Elevation",
+    value: `${metar.elev} meters MSL`,
+  });
+
+  // Location
+  embed.addFields({
+    name: "Location",
+    value:
+      `[Google Map](http://maps.google.com/maps?q=${metar.lat},${metar.lon})` +
+      ` (${metar.lat.toFixed(2)}, ${metar.lon.toFixed(2)})`,
+  });
+
+  // Source
+  embed.addFields({
+    name: "Source",
+    value: "[Aviation Weather](https://aviationweather.gov)",
+  });
+
+  // Note
+  embed.addFields({
+    name: "Developer Note",
+    value: "||Please open a GitHub issue for the corrections. Thank you.||",
+  });
+
+  // Timestamp
+  embed.setTimestamp(dayjs.unix(metar.obsTime).toDate());
+
+  // Footer advise
+  embed.setFooter({
+    text: "This data should only be used for planning purposes | Observation Time",
+  });
+
+  return embed;
+}
 
 @Discord()
 export class Example {
@@ -36,7 +163,7 @@ export class Example {
       type: SimpleCommandOptionType.Number,
     })
     hourBefore: number,
-    command: SimpleCommandMessage,
+    command: SimpleCommandMessage
   ): void {
     !icao
       ? command.sendUsageSyntax()
@@ -65,7 +192,7 @@ export class Example {
       type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ): void {
     this.handler(interaction, icao, hourBefore);
   }
@@ -73,11 +200,25 @@ export class Example {
   async handler(
     interaction: CommandInteraction | Message,
     icao: string,
-    hourBefore: number,
+    hourBefore: number
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
       await interaction.deferReply();
+    }
+
+    async function replyOrFollowUp(
+      payload:
+        | string
+        | MessagePayload
+        | Omit<MessageReplyOptions, "flags">
+        | Omit<InteractionReplyOptions, "flags">
+    ): Promise<void> {
+      if (isMessage) {
+        await interaction.reply(payload);
+      } else {
+        await interaction.followUp(payload);
+      }
     }
 
     // fix hour
@@ -85,240 +226,52 @@ export class Example {
       hourBefore = 1;
     }
 
-    const aw = new AwClient();
-    const searchStation = await aw.AW({
-      datasource: "STATIONS",
-      stationString: icao,
-    });
-
     // fetch station info
-    const station = searchStation[0];
+    const station = getICAO(icao);
     if (!station) {
-      !isMessage
-        ? interaction.followUp({
-            components: [supportRow],
-            content: ErrorMessages.InvalidICAOMessage,
-          })
-        : interaction.reply({
-            components: [supportRow],
-            content: ErrorMessages.InvalidICAOMessage,
-          });
+      await replyOrFollowUp({
+        components: [supportRow],
+        content: ErrorMessages.InvalidICAOMessage,
+      });
       return;
     }
 
-    // fetch metar info
-    const response = await aw.AW({
-      datasource: "METARS",
-      hoursBeforeNow: hourBefore,
-      stationString: station.station_id,
+    const { data } = await getMetar({
+      format: "json",
+      hours: hourBefore,
+      ids: station.icaoId,
     });
 
     // if no info found
-    if (!response.length) {
-      const msg = `Data not available for ${station.site}, ${station.country} (${station.station_id})`;
-      !isMessage
-        ? interaction.followUp({ components: [supportRow], content: msg })
-        : interaction.reply({ components: [supportRow], content: msg });
+    if (data.length === 0) {
+      const msg = `Data not available for ${station.site}, ${station.country} (${station.icaoId})`;
+      replyOrFollowUp({ components: [supportRow], content: msg });
       return;
     }
 
-    const allPages = response.map((metarData) => {
-      // prepare embed
-      const embed = new EmbedBuilder();
-      embed.setTitle(
-        `${station.site}, ${station.country} (${station.station_id})`,
-      );
+    // if one result, sent it
+    if (data.length === 1) {
+      const metar = data[0] as MetarResponse;
+      replyOrFollowUp({ embeds: [GetMetarEmbed(station, metar)] });
+      return;
+    }
 
-      // raw text
-      embed.addFields({ name: "Raw Text", value: metarData.raw_text });
-      const spoken: string[] = [];
-      if (metarData.wind_dir_degrees) {
-        spoken.push(
-          `Winds ${numSpoke(metarData.wind_dir_degrees)} at ${
-            metarData.wind_speed_kt
-          }kt.`,
-        );
-      }
-      if (metarData.visibility_statute_mi) {
-        spoken.push(
-          `Visibility ${numSpoke(
-            Number((metarData.visibility_statute_mi * 1.609344).toFixed(2)),
-          )} kilometers.`,
-        );
-      }
-      /* cspell: disable-next-line */
-      if (metarData.altim_in_hg) {
-        spoken.push(
-          `Altimeter ${numSpoke(
-            /* cspell: disable-next-line */
-            Number((metarData.altim_in_hg * 33.863886666667).toFixed(2)),
-          )} hPa.`,
-        );
+    // Pagination
+    const getPage: Resolver = (page) => {
+      const metar = data[page];
+      if (!metar) {
+        return {
+          content: "Data not available",
+        };
       }
 
-      if (metarData.temp_c) {
-        spoken.push(
-          `Temperature ${numSpoke(metarData.temp_c)} degree celsius.`,
-        );
-      }
+      return { embeds: [GetMetarEmbed(station, metar)] };
+    };
 
-      /* cspell: disable-next-line */
-      if (metarData.dewpoint_c) {
-        /* cspell: disable-next-line */
-        spoken.push(`Dewpoint ${numSpoke(metarData.temp_c)} degree celsius.`);
-      }
-      embed.addFields({ name: "Spoken", value: spoken.join(" ") });
-
-      // Cloud
-      if (metarData.sky_condition.length) {
-        const cloudInfo = metarData.sky_condition
-          .map((info) => {
-            return (
-              `${aw.getSkyCondition(info.sky_cover).description} (${
-                info.sky_cover
-              })` +
-              (info.cloud_base_ft_agl
-                ? ` at ${info?.cloud_base_ft_agl} ft`
-                : "")
-            );
-          })
-          .join("\n");
-
-        embed.addFields({ name: "Cloud", value: cloudInfo });
-      }
-
-      // Wind
-      if (metarData.wind_dir_degrees) {
-        embed.addFields({
-          name: "Wind",
-          value:
-            `${metarData.wind_dir_degrees}° ${metarData.wind_speed_kt}kt` +
-            (metarData.wind_gust_kt
-              ? ` (gust ${metarData.wind_gust_kt}kt)`
-              : ""),
-        });
-      }
-
-      // Altimeter
-      embed.addFields({
-        name: "Altimeter",
-        /* cspell: disable-next-line */
-        value:
-          `${(metarData.altim_in_hg * 33.863886666667).toFixed(2)} hPa` +
-          /* cspell: disable-next-line */
-          ` (${metarData.altim_in_hg.toFixed(2)} inHg)`,
-      });
-
-      // Temperature
-      embed.addFields({
-        name: "Temperature",
-        value: `${metarData.temp_c}°C (${(
-          (metarData.temp_c * 9) / 5 +
-          32
-        ).toFixed(
-          2,
-          /* cspell: disable-next-line */
-        )}°F) - Dewpoint: ${
-          /* cspell: disable-next-line */
-          metarData.dewpoint_c
-        }°C (${
-          /* cspell: disable-next-line */
-          ((metarData.dewpoint_c * 9) / 5 + 32).toFixed(2)
-        }°F)`,
-      });
-
-      // Flight Rule
-      if (metarData.flight_category) {
-        embed.addFields({
-          name: "Flight Rule",
-          value: metarData.flight_category,
-        });
-      }
-
-      // Visibility
-      if (metarData.visibility_statute_mi) {
-        embed.addFields({
-          name: "Visibility",
-          value: `${metarData.visibility_statute_mi.toFixed(2)} sm (${(
-            metarData.visibility_statute_mi * 1.609344
-          ).toFixed(2)} km)`,
-        });
-      }
-
-      // Location
-      embed.addFields({
-        name: "Location",
-        value:
-          `[Google Map](http://maps.google.com/maps?q=${metarData.latitude},${metarData.longitude})` +
-          ` (${metarData.latitude.toFixed(2)}, ${metarData.longitude.toFixed(
-            2,
-          )})`,
-      });
-
-      // Type
-      embed.addFields({
-        name: "Elevation",
-        value: `${metarData.elevation_m} meters MSL`,
-      });
-
-      // Source
-      embed.addFields({
-        name: "Source",
-        value: `[Aviation Weather](${aw.URI.AW({
-          datasource: "METARS",
-          endTime: metarData.observation_time,
-          startTime: metarData.observation_time,
-          stationString: station.station_id,
-        })})`,
-      });
-
-      // Timestamp
-      embed.setTimestamp(new Date(metarData.observation_time));
-
-      // Footer advise
-      embed.setFooter({
-        text: "This data should only be used for planning purposes | Observation Time",
-      });
-
-      return embed;
+    const pagination = new Pagination(interaction, {
+      maxLength: data.length,
+      resolver: getPage,
     });
-
-    if (allPages.length === 1) {
-      !isMessage
-        ? interaction.followUp({ embeds: allPages })
-        : interaction.reply({ embeds: allPages });
-      return;
-    } else {
-      if (allPages.length < 6) {
-        new Pagination(
-          interaction,
-          allPages.map((embed) => ({ embeds: [embed] })),
-          {
-            enableExit: true,
-            type: PaginationType.Button,
-          },
-        ).send();
-      } else {
-        // all pages text with observation time .
-        const menuOptions = response.map(
-          (metarData) =>
-            `Page {page} - ${new Date(
-              metarData.observation_time,
-            ).toUTCString()}`,
-        );
-        new Pagination(
-          interaction,
-          allPages.map((embed) => ({ embeds: [embed] })),
-          {
-            enableExit: true,
-            labels: {
-              end: `End - ${allPages.length}`,
-            },
-            pageText: menuOptions,
-            type: PaginationType.SelectMenu,
-          },
-        ).send();
-      }
-    }
+    await pagination.send();
   }
 }

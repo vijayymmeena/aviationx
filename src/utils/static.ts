@@ -28,5 +28,5 @@ export const supportRow =
   new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
     githubButton,
     discordButton,
-    addToServerButton,
+    addToServerButton
   );

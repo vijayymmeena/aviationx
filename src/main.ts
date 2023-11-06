@@ -61,6 +61,13 @@ bot.once("ready", async () => {
 });
 
 bot.on("interactionCreate", (interaction: Interaction) => {
+  if (
+    interaction.isButton() &&
+    interaction.customId.startsWith("discordx@pagination")
+  ) {
+    return;
+  }
+
   bot.executeInteraction(interaction);
 });
 

@@ -1,4 +1,3 @@
-import { Client as AwClient } from "aviationweather";
 import type { CommandInteraction } from "discord.js";
 import {
   ApplicationCommandOptionType,
@@ -15,8 +14,8 @@ import {
   SlashOption,
 } from "discordx";
 
-import { searchICAO } from "../utils/common.js";
 import { ErrorMessages, supportRow } from "../utils/static.js";
+import { getICAO, searchICAO } from "../utils/stations.js";
 
 @Discord()
 export class Example {
@@ -27,7 +26,7 @@ export class Example {
   simpleMetar(
     @SimpleCommandOption({ name: "icao", type: SimpleCommandOptionType.String })
     icao: string | undefined,
-    command: SimpleCommandMessage,
+    command: SimpleCommandMessage
   ): void {
     !icao ? command.sendUsageSyntax() : this.handler(command.message, icao);
   }
@@ -45,26 +44,21 @@ export class Example {
       type: ApplicationCommandOptionType.String,
     })
     icao: string,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ): void {
     this.handler(interaction, icao);
   }
 
   async handler(
     interaction: CommandInteraction | Message,
-    icao: string,
+    icao: string
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
       await interaction.deferReply();
     }
 
-    const aw = new AwClient();
-    const stations = await aw.AW({
-      datasource: "STATIONS",
-      stationString: icao,
-    });
-    const station = stations[0];
+    const station = getICAO(icao);
     if (!station) {
       !isMessage
         ? interaction.followUp({
@@ -79,21 +73,19 @@ export class Example {
     }
 
     const embed = new EmbedBuilder();
-    embed.setTitle(
-      `${station.site}, ${station.country} (${station.station_id})`,
-    );
+    embed.setTitle(`${station.site}, ${station.country} (${station.icaoId})`);
 
     // wmo_id
-    if (station.wmo_id) {
-      embed.addFields({ name: "WMO Id", value: `${station.wmo_id}` });
+    if (station.wmoId) {
+      embed.addFields({ name: "WMO Id", value: `${station.wmoId}` });
     }
 
     // Location
     embed.addFields({
       name: "Location",
       value:
-        `[Google Map](http://maps.google.com/maps?q=${station.latitude},${station.longitude})` +
-        ` (${station.latitude.toFixed(2)}, ${station.longitude.toFixed(2)})`,
+        `[Google Map](http://maps.google.com/maps?q=${station.lat},${station.lon})` +
+        ` (${station.lat.toFixed(2)}, ${station.lon.toFixed(2)})`,
     });
 
     // State
@@ -105,21 +97,15 @@ export class Example {
     embed.addFields({ name: "Country", value: `${station.country}` });
 
     // Type
-    embed.addFields({ name: "Site type", value: `${station.site_type}` });
-
-    // Type
     embed.addFields({
       name: "Elevation",
-      value: `${station.elevation_m} meters MSL`,
+      value: `${station.elev} meters MSL`,
     });
 
     // Source
     embed.addFields({
       name: "Source",
-      value: `[Aviation Weather](${aw.URI.AW({
-        datasource: "STATIONS",
-        stationString: station.station_id,
-      })})`,
+      value: "[Aviation Weather](https://aviationweather.gov)",
     });
 
     // send
