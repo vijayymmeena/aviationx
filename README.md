@@ -11,9 +11,6 @@ A aviation weather bot for discord.
 - /metar
 - /taf
 - /station
-- /airep
-- /airmet
-- /gairmet
 
 # Need bot in your server?
 
