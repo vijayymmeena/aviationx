@@ -30,8 +30,6 @@ import { convertVisibilityInput } from "../utils/visibility.js";
 import { degreesToDirection, getSky } from "../utils/wind.js";
 
 function GetMetarEmbed(station: Station, metar: MetarResponse) {
-  console.log(metar, metar.clouds);
-
   // prepare embed
   const embed = new EmbedBuilder();
 
