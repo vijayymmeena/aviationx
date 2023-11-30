@@ -41,7 +41,6 @@ function GetMetarEmbed(station: Station, metar: MetarResponse) {
 
   // clouds
   if (metar.clouds.length > 0) {
-    console.log(getSky(metar.clouds[0]?.cover ?? ""));
     const cloudInfo = metar.clouds
       .map((info) => {
         return (
