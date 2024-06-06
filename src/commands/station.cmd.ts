@@ -28,7 +28,9 @@ export class Example {
     icao: string | undefined,
     command: SimpleCommandMessage,
   ): void {
-    !icao ? command.sendUsageSyntax() : this.handler(command.message, icao);
+    !icao
+      ? void command.sendUsageSyntax()
+      : void this.handler(command.message, icao);
   }
 
   @Slash({
@@ -46,7 +48,7 @@ export class Example {
     icao: string,
     interaction: CommandInteraction,
   ): void {
-    this.handler(interaction, icao);
+    void this.handler(interaction, icao);
   }
 
   async handler(
@@ -61,11 +63,11 @@ export class Example {
     const station = getICAO(icao);
     if (!station) {
       !isMessage
-        ? interaction.followUp({
+        ? await interaction.followUp({
             components: [supportRow],
             content: ErrorMessages.InvalidICAOMessage,
           })
-        : interaction.reply({
+        : await interaction.reply({
             components: [supportRow],
             content: ErrorMessages.InvalidICAOMessage,
           });
@@ -110,7 +112,7 @@ export class Example {
 
     // send
     !isMessage
-      ? interaction.followUp({ embeds: [embed] })
-      : interaction.reply({ embeds: [embed] });
+      ? await interaction.followUp({ embeds: [embed] })
+      : await interaction.reply({ embeds: [embed] });
   }
 }

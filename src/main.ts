@@ -1,6 +1,6 @@
 import { dirname, importx } from "@discordx/importer";
 import type { Interaction, Message } from "discord.js";
-import { ActivityType, IntentsBitField, Partials } from "discord.js";
+import { IntentsBitField, Partials } from "discord.js";
 import { Client } from "discordx";
 
 export const bot = new Client({
@@ -33,31 +33,16 @@ export const bot = new Client({
   },
 });
 
-bot.once("ready", async () => {
-  // Make sure all guilds are cached
-  await bot.guilds.fetch();
-
+bot.once("ready", () => {
   // Synchronize applications commands with Discord
-  await bot.initApplicationCommands();
-
-  // To clear all guild commands, uncomment this line,
-  // This is useful when moving from guild commands to global commands
-  // It must only be executed once
-  //
-  //  await bot.clearApplicationCommands(
-  //    ...bot.guilds.cache.map((g) => g.id)
-  //  );
-
-  console.log("Bot started");
+  void bot.initApplicationCommands();
 
   // set bot activity
-  setInterval(() => {
-    if (bot.user) {
-      bot.user.setActivity("aviation weather | /metar", {
-        type: ActivityType.Watching,
-      });
-    }
-  }, 60 * 1000);
+  if (bot.user) {
+    bot.user.setActivity("aviation weather | /metar");
+  }
+
+  console.log("Bot started");
 });
 
 bot.on("interactionCreate", (interaction: Interaction) => {
@@ -72,7 +57,7 @@ bot.on("interactionCreate", (interaction: Interaction) => {
 });
 
 bot.on("messageCreate", (message: Message) => {
-  bot.executeCommand(message);
+  void bot.executeCommand(message);
 });
 
 async function run() {
@@ -88,4 +73,4 @@ async function run() {
   await bot.login(process.env.BOT_TOKEN);
 }
 
-run();
+void run();

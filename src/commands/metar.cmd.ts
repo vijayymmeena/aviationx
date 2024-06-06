@@ -163,8 +163,8 @@ export class Example {
     command: SimpleCommandMessage,
   ): void {
     !icao
-      ? command.sendUsageSyntax()
-      : this.handler(command.message, icao, hourBefore);
+      ? void command.sendUsageSyntax()
+      : void this.handler(command.message, icao, hourBefore);
   }
 
   @Slash({
@@ -191,7 +191,7 @@ export class Example {
     hourBefore: number,
     interaction: CommandInteraction,
   ): void {
-    this.handler(interaction, icao, hourBefore);
+    void this.handler(interaction, icao, hourBefore);
   }
 
   async handler(
@@ -240,16 +240,16 @@ export class Example {
     });
 
     // if no info found
-    if (data.length === 0) {
+    if (data[0] === undefined) {
       const msg = `Data not available for ${station.site}, ${station.country} (${station.icaoId})`;
-      replyOrFollowUp({ components: [supportRow], content: msg });
+      await replyOrFollowUp({ components: [supportRow], content: msg });
       return;
     }
 
     // if one result, sent it
     if (data.length === 1) {
-      const metar = data[0] as MetarResponse;
-      replyOrFollowUp({ embeds: [GetMetarEmbed(station, metar)] });
+      const metar = data[0];
+      await replyOrFollowUp({ embeds: [GetMetarEmbed(station, metar)] });
       return;
     }
 

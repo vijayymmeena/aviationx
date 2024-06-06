@@ -14,22 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out code 🛎
-        uses: actions/checkout@v4
+        uses: actions/checkout@main
 
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@main
         with:
-          node-version: 18
-          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+          node-version: "lts/*"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run ESLint
-        run: npm run check:lint
+        run: npm run lint
 
       - name: Run Prettier
-        run: npm run check:prettier
+        run: npm run prettier
 
       - name: Run Build
         run: npm run build
