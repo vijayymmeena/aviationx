@@ -1,4 +1,4 @@
-import { randomInt } from "crypto";
+import { randomInt } from "node:crypto";
 import type { Client, CommandInteraction } from "discord.js";
 import { EmbedBuilder } from "discord.js";
 import { Discord, Slash } from "discordx";
@@ -26,7 +26,7 @@ export class Command {
     embed.setAuthor({
       iconURL: interaction.client.user.displayAvatarURL(),
       name: interaction.client.user.username,
-      url: "https://github.com/samarmeena/aviationx",
+      url: "https://github.com/vijayymmeena/aviationx",
     });
 
     embed.setColor(randomInt(50000));
@@ -51,7 +51,7 @@ export class Command {
     embed.addFields({
       inline: true,
       name: "Developer",
-      value: "[Samar](https://github.com/samarmeena)",
+      value: "[Vijay Meena](https://github.com/vijayymmeena)",
     });
 
     embed.addFields({

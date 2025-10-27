@@ -1,7 +1,7 @@
 // Function to convert miles to kilometers
 function convertToKilometers(input: string) {
   const miles = parseFloat(input);
-  if (!isNaN(miles)) {
+  if (!Number.isNaN(miles)) {
     // 1 mile is approximately 1.60934 kilometers
     return (miles * 1.60934).toFixed(2);
   }

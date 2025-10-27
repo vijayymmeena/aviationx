@@ -9,7 +9,7 @@ export enum ErrorMessages {
 const githubButton = new ButtonBuilder({
   label: "🚀 GitHub",
   style: ButtonStyle.Link,
-  url: "https://github.com/samarmeena/aviationx",
+  url: "https://github.com/vijayymmeena/aviationx",
 });
 
 const discordButton = new ButtonBuilder({
@@ -28,5 +28,5 @@ export const supportRow =
   new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
     githubButton,
     discordButton,
-    addToServerButton,
+    addToServerButton
   );

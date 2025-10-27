@@ -40,7 +40,7 @@ function GetMetarEmbed(station: Station, metar: MetarResponse) {
   embed.addFields({ name: "Raw Text", value: metar.rawOb });
 
   // clouds
-  if (metar.clouds.length > 0) {
+  if (metar.clouds && metar.clouds.length > 0) {
     const cloudInfo = metar.clouds
       .map((info) => {
         return (
@@ -87,7 +87,7 @@ function GetMetarEmbed(station: Station, metar: MetarResponse) {
     embed.addFields({
       name: "Temperature",
       value: `${metar.temp}°C (${((metar.temp * 9) / 5 + 32).toFixed(
-        2,
+        2
         /* cspell: disable-next-line */
       )}°F) - Dewpoint: ${
         /* cspell: disable-next-line */
@@ -160,7 +160,7 @@ export class Example {
       type: SimpleCommandOptionType.Number,
     })
     hourBefore: number,
-    command: SimpleCommandMessage,
+    command: SimpleCommandMessage
   ): void {
     !icao
       ? void command.sendUsageSyntax()
@@ -189,7 +189,7 @@ export class Example {
       type: ApplicationCommandOptionType.Number,
     })
     hourBefore: number,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ): void {
     void this.handler(interaction, icao, hourBefore);
   }
@@ -197,7 +197,7 @@ export class Example {
   async handler(
     interaction: CommandInteraction | Message,
     icao: string,
-    hourBefore: number,
+    hourBefore: number
   ): Promise<void> {
     const isMessage = interaction instanceof Message;
     if (!isMessage) {
@@ -209,7 +209,7 @@ export class Example {
         | string
         | MessagePayload
         | Omit<MessageReplyOptions, "flags">
-        | Omit<InteractionReplyOptions, "flags">,
+        | Omit<InteractionReplyOptions, "flags">
     ): Promise<void> {
       if (isMessage) {
         await interaction.reply(payload);
